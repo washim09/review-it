@@ -1,0 +1,63 @@
+# ==============================================================================
+# COTURN CONFIGURATION UPDATE FOR DYNAMIC CREDENTIALS
+# ==============================================================================
+# 
+# File: /etc/turnserver.conf
+# Edit with: sudo nano /etc/turnserver.conf
+#
+# ==============================================================================
+
+# 1. COMMENT OUT STATIC USER (if present)
+# ========================================
+# user=turnwebrtc:TurnweB@rtc3369
+
+
+# 2. ENABLE DYNAMIC CREDENTIALS
+# ==============================
+use-auth-secret
+lt-cred-mech
+
+
+# 3. ADD STATIC SECRET (generate with: openssl rand -base64 32)
+# ==============================================================
+# ⚠️ IMPORTANT: Use the SAME secret in backend .env file!
+static-auth-secret=YOUR_GENERATED_SECRET_HERE
+
+
+# 4. VERIFY THESE SETTINGS ARE PRESENT
+# =====================================
+listening-port=3478
+tls-listening-port=5349
+realm=turn.riviewit.com
+relay-ip=147.93.31.44
+external-ip=147.93.31.44
+listening-ip=147.93.31.44
+
+# SSL Certificates
+cert=/etc/letsencrypt/live/turn.riviewit.com/fullchain.pem
+pkey=/etc/letsencrypt/live/turn.riviewit.com/privkey.pem
+fingerprint
+
+# Quotas
+total-quota=100
+bps-capacity=0
+
+# Disable STUN (we only need TURN relay)
+no-stun
+
+
+# ==============================================================================
+# AFTER EDITING, RESTART COTURN:
+# ==============================================================================
+# sudo systemctl restart coturn
+# sudo systemctl status coturn
+# sudo tail -f /var/log/turn*.log
+#
+# ==============================================================================
+# GENERATE SECRET COMMAND:
+# ==============================================================================
+# openssl rand -base64 32
+#
+# Example output: K7j9mN2pQ4rT6vY8zA1bC3dE5fG7hI9jK
+#
+# ==============================================================================

@@ -1,0 +1,10 @@
+{
+  "devDependencies": {
+    "@types/web-push": "^3.6.4",
+    "vite-plugin-pwa": "^1.2.0",
+    "workbox-window": "^7.4.0"
+  },
+  "dependencies": {
+    "web-push": "^3.6.7"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "review-admin",
+  "private": true,
+  "version": "0.0.0",
+    "scripts": {
+    "dev": "next dev -p 5174",
+    "build": "next build",
+    "start": "next start -p 5174",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@types/dompurify": "^3.2.0",
+    "axios": "^1.6.0",
+    "dompurify": "^3.2.6",
+    "next": "^15.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.19.0",
+    "@tailwindcss/postcss": "^4.0.6",
+    "@types/axios": "^0.14.4",
+    "@types/react": "^19.0.8",
+    "@types/react-dom": "^19.0.3",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^9.19.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-react-refresh": "^0.4.18",
+    "globals": "^15.14.0",
+    "postcss": "^8.5.1",
+    "tailwindcss": "^4.0.6",
+    "typescript": "~5.7.2",
+    "typescript-eslint": "^8.22.0",
+    "eslint-config-next": "^15.0.0"
+  }
+}

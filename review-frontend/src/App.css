@@ -1,0 +1,9 @@
+/* Review-It Frontend Application Styles */
+
+/* Root container - keeping minimal essential styles */
+#root {
+  margin: 0 auto;
+  min-height: 100vh;
+}
+
+/* Add any application-specific styles here as needed */

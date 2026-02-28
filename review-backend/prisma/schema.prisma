@@ -1,0 +1,159 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// For more information about Prisma Client, see:
+// https://www.prisma.io/docs/orm/prisma-client
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Admin model for the admin panel
+model Admin {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(100)
+  email     String   @unique
+  password  String   @db.VarChar(255)
+  createdAt DateTime @default(now())
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(100)
+  email     String   @unique
+  password  String?  @db.VarChar(255) // Made optional for OAuth users
+  imageUrl  String?  // Profile image URL
+  profileImage String? // OAuth profile image
+  contact   String?  @db.VarChar(15)
+  dob       DateTime?
+  gender    String?  @db.VarChar(10)
+  address   String?
+  city      String?
+  state     String?
+  instagram String?
+  facebook  String?
+  twitter   String?
+  // Google OAuth fields
+  googleId    String? @unique
+  isVerified  Boolean @default(false)
+  // Email verification fields
+  verificationToken String?
+  verificationTokenExpires DateTime?
+  emailVerifiedAt DateTime?
+  createdAt DateTime @default(now())
+  reviews   Review[]
+  sentMessages ChatMessage[] @relation("MessageSender") // Opposite relation for sender
+  receivedMessages ChatMessage[] @relation("MessageRecipient") // Opposite relation for recipient
+  likes     Like[]   // Relationship to Like model
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  entity    String   @db.VarChar(255) // Renamed from "product" to support universal reviews
+  rating    Int
+  review    String
+  imageUrl  String?
+  videoUrl  String?
+  mediaUrls String[] // Array of image/video URLs
+  title     String   @db.VarChar(255)
+  content   String
+  category  String?  @db.VarChar(100)
+  tags      String[] // Add tags for categorization
+  likeCount Int      @default(0) // Track total likes for this review
+  createdAt DateTime @default(now())
+  author    User     @relation(fields: [authorId], references: [id])
+  authorId  Int
+  chatMessages ChatMessage[]
+  likes     Like[]   // Relationship to Like model
+}
+
+model ChatMessage {
+  id          Int      @id @default(autoincrement())
+  content     String
+  mediaUrl    String?  // URL for attachments (images, documents, voice messages)
+  mediaType   String?  // Type of media: "image", "audio", "document", etc.
+  reviewId    Int?
+  review      Review?  @relation(fields: [reviewId], references: [id])
+  senderId    Int
+  sender      User     @relation("MessageSender", fields: [senderId], references: [id])
+  recipientId Int
+  recipient   User     @relation("MessageRecipient", fields: [recipientId], references: [id])
+  isRead      Boolean  @default(false)
+  // isSent removed as it doesn't exist in the database
+  isDelivered Boolean  @default(false)  // Message was delivered to recipient
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // For reply functionality
+  replyToId   Int?     // ID of the message being replied to
+  replyTo     ChatMessage? @relation("Replies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies     ChatMessage[] @relation("Replies")
+}
+
+model SupportRequest {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String
+  subject   String
+  message   String   @db.Text
+  priority  String   @default("MEDIUM") // LOW, MEDIUM, HIGH
+  status    String   @default("PENDING") // PENDING, IN_PROGRESS, RESOLVED, CLOSED
+  response  String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model EmailSubscription {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  isActive  Boolean  @default(true)
+  lastEmailSent DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PasswordResetToken {
+  id        Int      @id @default(autoincrement())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  
+  @@index([email])
+  @@index([token])
+}
+
+model Like {
+  id       Int      @id @default(autoincrement())
+  userId   Int
+  reviewId Int
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  review   Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  
+  @@unique([userId, reviewId]) // Prevent duplicate likes from same user on same review
+  @@index([reviewId]) // Index for efficient review like queries
+  @@index([userId]) // Index for efficient user like queries
+}
+
+model PushSubscription {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  endpoint   String   @db.Text
+  p256dh     String   @db.Text
+  auth       String   @db.Text
+  userAgent  String?  @db.Text
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  @@unique([userId, endpoint]) // Prevent duplicate subscriptions
+  @@index([userId])
+  @@index([isActive])
+}
