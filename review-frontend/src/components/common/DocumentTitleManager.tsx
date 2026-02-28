@@ -25,7 +25,7 @@ const DocumentTitleManager = () => {
   const pathname = usePathname();
 
   useEffect(() => {
-    const currentPath = pathname;
+    const currentPath = pathname || '/';
     
     // Check for dynamic routes (like /review/:id or /message/:contactId)
     let title = pageTitles[currentPath];
