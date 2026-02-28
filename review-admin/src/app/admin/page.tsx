@@ -1,5 +1,5 @@
 'use client';
-import AdminDashboard from '../../pages/AdminDashboard';
+import AdminDashboard from '../../views/AdminDashboard';
 import AdminRoute from '../../components/admin/AdminRoute';
 export default function DashboardPage() {
   return (

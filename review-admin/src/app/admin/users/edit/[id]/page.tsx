@@ -1,5 +1,5 @@
 'use client';
-import EditUser from '../../../../../pages/EditUser';
+import EditUser from '../../../../../views/EditUser';
 import AdminRoute from '../../../../../components/admin/AdminRoute';
 export default function EditUserPage() {
   return (

@@ -1,5 +1,5 @@
 'use client';
-import AdminRegister from '../../pages/AdminRegister';
+import AdminRegister from '../../views/AdminRegister';
 export default function AdminRegisterPage() {
   return <AdminRegister />;
 }

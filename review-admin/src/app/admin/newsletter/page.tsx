@@ -1,5 +1,5 @@
 'use client';
-import AdminNewsletter from '../../../pages/AdminNewsletter';
+import AdminNewsletter from '../../../views/AdminNewsletter';
 import AdminRoute from '../../../components/admin/AdminRoute';
 export default function NewsletterPage() {
   return (

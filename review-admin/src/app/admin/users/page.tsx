@@ -1,5 +1,5 @@
 'use client';
-import AdminUsers from '../../../pages/AdminUsers';
+import AdminUsers from '../../../views/AdminUsers';
 import AdminRoute from '../../../components/admin/AdminRoute';
 export default function UsersPage() {
   return (

@@ -1,5 +1,5 @@
 'use client';
-import AdminSupport from '../../../pages/AdminSupport';
+import AdminSupport from '../../../views/AdminSupport';
 import AdminRoute from '../../../components/admin/AdminRoute';
 export default function SupportPage() {
   return (
