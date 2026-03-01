@@ -58,6 +58,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const login = (token: string, user: User) => {
     localStorage.setItem('authToken', token);
     localStorage.setItem('user', JSON.stringify(user)); // Store user in localStorage
+    // Also set cookie so Next.js middleware can read it
+    document.cookie = `authToken=${token}; path=/; max-age=604800; SameSite=Lax`;
     setIsAuth(true);
     setCurrentUser(user);
   };
@@ -66,6 +68,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const logout = () => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('user');
+    // Also clear the cookie
+    document.cookie = 'authToken=; path=/; max-age=0; SameSite=Lax';
     setIsAuth(false);
     setCurrentUser(null);
   };
@@ -77,6 +81,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     
     if (!token || !user) {
       // No token or user, definitely not authenticated
+      document.cookie = 'authToken=; path=/; max-age=0; SameSite=Lax';
       setIsAuth(false);
       setCurrentUser(null);
       setIsLoading(false);
@@ -96,6 +101,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     
     // If token is not expired and we have user data, use cached data
     if (!tokenExpired && user) {
+      // Sync cookie with localStorage token
+      document.cookie = `authToken=${token}; path=/; max-age=604800; SameSite=Lax`;
       setIsAuth(true);
       setCurrentUser(user);
       setIsLoading(false);

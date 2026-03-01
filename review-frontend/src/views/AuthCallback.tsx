@@ -46,6 +46,8 @@ const AuthCallback = () => {
           // Store token and user data
           localStorage.setItem('authToken', token);
           localStorage.setItem('user', JSON.stringify(userData));
+          // Also set cookie so Next.js middleware can read it
+          document.cookie = `authToken=${token}; path=/; max-age=604800; SameSite=Lax`;
           
           // Update auth context
           login(token, userData);
