@@ -38,10 +38,16 @@ const AuthCallback = () => {
         return;
       }
 
-      if (token && userParam) {
+      if (token) {
         try {
-          // Parse user data
-          const userData = JSON.parse(decodeURIComponent(userParam));
+          // Parse user data from URL param or decode from JWT
+          let userData;
+          if (userParam) {
+            userData = JSON.parse(decodeURIComponent(userParam));
+          } else {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            userData = { id: payload.id || payload.userId, email: payload.email, name: payload.name || payload.email };
+          }
           
           // Store token and user data
           localStorage.setItem('authToken', token);

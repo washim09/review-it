@@ -1,10 +1,8 @@
-import type { Metadata } from 'next'
-import UserProfile from '@/pages/UserProfile'
+'use client'
 
-export const metadata: Metadata = {
-  title: 'Profile | ReviewIt',
-}
+import UserProfile from '@/pages/UserProfile'
+import ProtectedRoute from '@/components/auth/ProtectedRoute'
 
 export default function ProfilePage() {
-  return <UserProfile />
+  return <ProtectedRoute><UserProfile /></ProtectedRoute>
 }

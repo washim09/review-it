@@ -1,10 +1,8 @@
-import type { Metadata } from 'next'
+'use client'
 import WriteReview from '@/pages/WriteReview'
 
-export const metadata: Metadata = {
-  title: 'Write a Review | ReviewIt',
-}
+import ProtectedRoute from '@/components/auth/ProtectedRoute'
 
 export default function WriteReviewPage() {
-  return <WriteReview />
+  return <ProtectedRoute><WriteReview /></ProtectedRoute>
 }

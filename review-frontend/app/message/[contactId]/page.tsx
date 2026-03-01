@@ -1,10 +1,8 @@
-import type { Metadata } from 'next'
+'use client'
 import MessagePage from '@/components/messages/MessagePage'
 
-export const metadata: Metadata = {
-  title: 'Messages | ReviewIt',
-}
+import ProtectedRoute from '@/components/auth/ProtectedRoute'
 
 export default function MessageContactPage() {
-  return <MessagePage />
+  return <ProtectedRoute><MessagePage /></ProtectedRoute>
 }
