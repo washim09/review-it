@@ -1,19 +1,19 @@
 'use client'
 
 import { useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 
 const AuthCallback = () => {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { login } = useAuth();
 
   useEffect(() => {
     const handleOAuthCallback = async () => {
-      const token = searchParams.get('token');
-      const userParam = searchParams.get('user');
-      const error = searchParams.get('error');
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('token');
+      const userParam = params.get('user');
+      const error = params.get('error');
 
       if (error) {
         console.error('OAuth error:', error);
@@ -70,7 +70,7 @@ const AuthCallback = () => {
     };
 
     handleOAuthCallback();
-  }, [searchParams, router, login]);
+  }, [router, login]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center">
