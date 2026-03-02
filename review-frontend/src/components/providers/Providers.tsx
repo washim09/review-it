@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { AuthProvider } from '../../context/AuthContext'
 import { ReviewProvider } from '../../context/ReviewContext'
 import Footer from '../layout/Footer'
@@ -7,6 +8,11 @@ import ScrollToTop from '../common/ScrollToTop'
 import DocumentTitleManager from '../common/DocumentTitleManager'
 
 export default function Providers({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {})
+    }
+  }, [])
   return (
     <AuthProvider>
       <ReviewProvider>

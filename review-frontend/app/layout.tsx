@@ -14,6 +14,8 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
+  icons: { icon: '/icons/favicon.ico', apple: '/icons/apple-touch-icon.png' },
+  manifest: '/manifest.json',
   metadataBase: new URL('https://riviewit.com'),
   alternates: {
     canonical: '/',
