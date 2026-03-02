@@ -6,6 +6,7 @@ import { ReviewProvider } from '../../context/ReviewContext'
 import Footer from '../layout/Footer'
 import ScrollToTop from '../common/ScrollToTop'
 import DocumentTitleManager from '../common/DocumentTitleManager'
+import InstallPrompt from '../pwa/InstallPrompt'
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
@@ -23,6 +24,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
           </main>
           <Footer />
           <ScrollToTop />
+          <InstallPrompt />
         </div>
       </ReviewProvider>
     </AuthProvider>

@@ -117,7 +117,7 @@ const InstallPrompt: React.FC = () => {
           <div className="flex items-center flex-1">
             <div className="bg-white rounded-lg p-2 mr-4">
               <img 
-                src="/icons/icon-72x72.png" 
+                src="/icons/favicon-96x96.png" 
                 alt="Riviewit" 
                 className="w-12 h-12"
                 onError={(e) => {
