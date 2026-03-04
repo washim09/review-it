@@ -157,3 +157,27 @@ model PushSubscription {
   @@index([userId])
   @@index([isActive])
 }
+
+model BlogPost {
+  id          Int      @id @default(autoincrement())
+  title       String   @db.VarChar(255)
+  slug        String   @unique
+  excerpt     String   @db.Text // Brief summary
+  content     String   @db.Text // Full article content
+  coverImage  String?  // Featured image URL
+  category    String   @db.VarChar(100)
+  tags        String[] // Array of tags
+  author      String   @db.VarChar(100)
+  authorImage String?  // Author profile image
+  readTime    Int      @default(5) // Estimated read time in minutes
+  viewCount   Int      @default(0) // Track article views
+  isPublished Boolean  @default(true)
+  publishedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([slug])
+  @@index([category])
+  @@index([isPublished])
+  @@index([publishedAt])
+}

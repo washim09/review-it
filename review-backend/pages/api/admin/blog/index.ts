@@ -1,0 +1,122 @@
+import { NextApiRequest, NextApiResponse } from 'next';
+import { prisma } from '../../../../lib/prisma';
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+
+// Verify admin authentication
+const verifyAdmin = (req: NextApiRequest): boolean => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) return false;
+
+  const token = authHeader.substring(7);
+  try {
+    jwt.verify(token, JWT_SECRET);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  // Verify admin
+  if (!verifyAdmin(req)) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  // GET - List all blog posts (including unpublished)
+  if (req.method === 'GET') {
+    try {
+      const { category, search, limit = '20', offset = '0' } = req.query;
+      const limitNum = parseInt(limit as string, 10);
+      const offsetNum = parseInt(offset as string, 10);
+
+      const where: any = {};
+
+      if (category && category !== 'all') {
+        where.category = category as string;
+      }
+
+      if (search) {
+        where.OR = [
+          { title: { contains: search as string, mode: 'insensitive' } },
+          { excerpt: { contains: search as string, mode: 'insensitive' } },
+        ];
+      }
+
+      const [posts, total] = await Promise.all([
+        prisma.blogPost.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          take: limitNum,
+          skip: offsetNum,
+        }),
+        prisma.blogPost.count({ where }),
+      ]);
+
+      return res.status(200).json({ posts, total });
+    } catch (error) {
+      console.error('Error fetching blog posts:', error);
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+  }
+
+  // POST - Create new blog post
+  if (req.method === 'POST') {
+    try {
+      const {
+        title,
+        slug,
+        excerpt,
+        content,
+        coverImage,
+        category,
+        tags = [],
+        author,
+        authorImage,
+        readTime = 5,
+        isPublished = false,
+      } = req.body;
+
+      // Validate required fields
+      if (!title || !slug || !excerpt || !content || !category || !author) {
+        return res.status(400).json({
+          message: 'Missing required fields: title, slug, excerpt, content, category, author',
+        });
+      }
+
+      // Check if slug already exists
+      const existingPost = await prisma.blogPost.findUnique({
+        where: { slug },
+      });
+
+      if (existingPost) {
+        return res.status(400).json({ message: 'Slug already exists' });
+      }
+
+      const post = await prisma.blogPost.create({
+        data: {
+          title,
+          slug,
+          excerpt,
+          content,
+          coverImage: coverImage || null,
+          category,
+          tags: Array.isArray(tags) ? tags : [],
+          author,
+          authorImage: authorImage || null,
+          readTime,
+          isPublished,
+          publishedAt: isPublished ? new Date() : new Date(),
+        },
+      });
+
+      return res.status(201).json({ message: 'Blog post created', post });
+    } catch (error: any) {
+      console.error('Error creating blog post:', error);
+      return res.status(500).json({ message: error.message || 'Internal server error' });
+    }
+  }
+
+  return res.status(405).json({ message: 'Method not allowed' });
+}

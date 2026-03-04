@@ -79,7 +79,7 @@ const Footer = () => {
             <h4 className="font-medium mb-4 text-white/90">Resources</h4>
             <ul className="space-y-2">
               <li><Link href="/about-us" className="text-white/70 hover:text-white transition-colors">About Us</Link></li>
-              <li><a href="#" className="text-white/70 hover:text-white transition-colors">Blog</a></li>
+              <li><Link href="/blog" className="text-white/70 hover:text-white transition-colors">Blog</Link></li>
               <li><Link href="/careers" className="text-white/70 hover:text-white transition-colors">Careers</Link></li>
               <li><Link href="/support" className="text-white/70 hover:text-white transition-colors">Support</Link></li>
             </ul>
@@ -91,6 +91,7 @@ const Footer = () => {
               <li><Link href="/terms-of-service" className="text-white/70 hover:text-white transition-colors">Terms of Service</Link></li>
               <li><Link href="/privacy-policy" className="text-white/70 hover:text-white transition-colors">Privacy Policy</Link></li>
               <li><Link href="/cookie-policy" className="text-white/70 hover:text-white transition-colors">Cookie Policy</Link></li>
+              <li><Link href="/contact" className="text-white/70 hover:text-white transition-colors">Contact Us</Link></li>
             </ul>
           </div>
           

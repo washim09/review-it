@@ -76,6 +76,14 @@ const AdminNavbar = () => {
                 </Link>
               </li>
               <li>
+                <Link 
+                  href="/admin/blog" 
+                  className={`text-white hover:text-gray-200 ${currentPath === '/admin/blog' ? 'font-bold' : ''}`}
+                >
+                  Blog
+                </Link>
+              </li>
+              <li>
                 <button
                   onClick={handleLogout}
                   className="text-white hover:text-gray-200"
