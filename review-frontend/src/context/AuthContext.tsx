@@ -234,10 +234,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Auth state checked - no need to log in production
   }, [isAuth, currentUser, authChecked]);
 
-  // Only render children after initial auth check
+  // Always render children so that search engines can index page content.
+  // Auth-protected routes should handle their own loading state via ProtectedRoute.
   return (
-    <AuthContext.Provider value={{ user: currentUser, currentUser, isAuth, isAuthenticated: isAuth, isLoading, login, logout }}>
-      {authChecked ? children : <div className="flex items-center justify-center min-h-screen">Checking authentication...</div>}
+    <AuthContext.Provider value={{ user: currentUser, currentUser, isAuth, isAuthenticated: isAuth, isLoading: !authChecked, login, logout }}>
+      {children}
     </AuthContext.Provider>
   );
 };

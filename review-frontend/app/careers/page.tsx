@@ -2,8 +2,11 @@ import type { Metadata } from 'next'
 import Careers from '@/pages/Careers'
 
 export const metadata: Metadata = {
-  title: 'Careers | Review-It',
-  description: 'Join the Review-It team and help shape the future of authentic reviews.',
+  title: 'Careers | Riviewit',
+  description: 'Join the Riviewit team and help shape the future of authentic, genuine reviews.',
+  alternates: {
+    canonical: '/careers',
+  },
 }
 
 export default function CareersPage() {
