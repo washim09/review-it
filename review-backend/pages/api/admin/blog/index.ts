@@ -1,8 +1,35 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { prisma } from '../../../../lib/prisma';
 import jwt from 'jsonwebtoken';
+import Cors from 'cors';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET || 'a8f5f167f44f4964e6c998dee827110c8bd1a9c8b4e5f2a3b7d8c9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4';
+
+// Initialize CORS middleware
+const cors = Cors({
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  origin: [
+    'https://riviewit.com',
+    'https://www.riviewit.com',
+    'https://admin.riviewit.com',
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:3000',
+  ],
+  credentials: true,
+});
+
+// Helper to run middleware
+function runMiddleware(req: NextApiRequest, res: NextApiResponse, fn: Function) {
+  return new Promise((resolve, reject) => {
+    fn(req, res, (result: any) => {
+      if (result instanceof Error) {
+        return reject(result);
+      }
+      return resolve(result);
+    });
+  });
+}
 
 // Verify admin authentication
 const verifyAdmin = (req: NextApiRequest): boolean => {
@@ -19,6 +46,14 @@ const verifyAdmin = (req: NextApiRequest): boolean => {
 };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  // Run CORS middleware
+  await runMiddleware(req, res, cors);
+
+  // Handle OPTIONS requests for preflight
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   // Verify admin
   if (!verifyAdmin(req)) {
     return res.status(401).json({ message: 'Unauthorized' });
