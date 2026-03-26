@@ -29,6 +29,10 @@ const AdminBlog = () => {
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const [uploadingAuthor, setUploadingAuthor] = useState(false);
+  const [coverImagePreview, setCoverImagePreview] = useState('');
+  const [authorImagePreview, setAuthorImagePreview] = useState('');
 
   const [formData, setFormData] = useState({
     title: '',
@@ -133,6 +137,8 @@ const AdminBlog = () => {
       readTime: post.readTime,
       isPublished: post.isPublished,
     });
+    setCoverImagePreview(post.coverImage || '');
+    setAuthorImagePreview(post.authorImage || '');
     setShowModal(true);
   };
 
@@ -175,6 +181,8 @@ const AdminBlog = () => {
       isPublished: false,
     });
     setEditingPost(null);
+    setCoverImagePreview('');
+    setAuthorImagePreview('');
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -190,6 +198,73 @@ const AdminBlog = () => {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '');
+  };
+
+  const handleFileUpload = async (file: File, type: 'coverImage' | 'authorImage') => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('type', type === 'coverImage' ? 'cover' : 'author');
+
+    const setUploading = type === 'coverImage' ? setUploadingCover : setUploadingAuthor;
+    const setPreview = type === 'coverImage' ? setCoverImagePreview : setAuthorImagePreview;
+
+    setUploading(true);
+
+    try {
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch(`${API_BASE_URL}/api/admin/upload/blog-image`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setFormData((prev) => ({ ...prev, [type]: data.url }));
+        setPreview(data.url);
+        alert('Image uploaded successfully!');
+      } else {
+        const error = await response.json();
+        alert(error.message || 'Failed to upload image');
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      alert('Error uploading image');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        alert('File size must be less than 10MB');
+        return;
+      }
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+      handleFileUpload(file, 'coverImage');
+    }
+  };
+
+  const handleAuthorImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        alert('File size must be less than 10MB');
+        return;
+      }
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+      handleFileUpload(file, 'authorImage');
+    }
   };
 
   const categories = ['Technology', 'Reviews', 'Tips', 'News', 'Guides'];
@@ -347,7 +422,10 @@ const AdminBlog = () => {
                   onChange={handleInputChange}
                   required
                   rows={10}
-                  className="w-full px-3 py-2 border rounded"
+                  className="w-full px-3 py-2 border round
+                  
+                  
+                  ed"
                 />
               </div>
 
@@ -409,24 +487,78 @@ const AdminBlog = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Cover Image URL</label>
-                  <input
-                    type="text"
-                    name="coverImage"
-                    value={formData.coverImage}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border rounded"
-                  />
+                  <label className="block text-sm font-medium mb-2">Cover Image</label>
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleCoverImageChange}
+                        className="flex-1 px-3 py-2 border rounded text-sm"
+                        disabled={uploadingCover}
+                      />
+                      {uploadingCover && (
+                        <span className="px-3 py-2 text-sm text-blue-600">Uploading...</span>
+                      )}
+                    </div>
+                    <input
+                      type="text"
+                      name="coverImage"
+                      value={formData.coverImage}
+                      onChange={handleInputChange}
+                      placeholder="Or paste image URL"
+                      className="w-full px-3 py-2 border rounded text-sm"
+                    />
+                    {(coverImagePreview || formData.coverImage) && (
+                      <div className="mt-2">
+                        <img
+                          src={coverImagePreview || formData.coverImage}
+                          alt="Cover preview"
+                          className="w-full h-32 object-cover rounded border"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x200?text=Invalid+Image';
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">Author Image URL</label>
-                  <input
-                    type="text"
-                    name="authorImage"
-                    value={formData.authorImage}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border rounded"
-                  />
+                  <label className="block text-sm font-medium mb-2">Author Image</label>
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAuthorImageChange}
+                        className="flex-1 px-3 py-2 border rounded text-sm"
+                        disabled={uploadingAuthor}
+                      />
+                      {uploadingAuthor && (
+                        <span className="px-3 py-2 text-sm text-blue-600">Uploading...</span>
+                      )}
+                    </div>
+                    <input
+                      type="text"
+                      name="authorImage"
+                      value={formData.authorImage}
+                      onChange={handleInputChange}
+                      placeholder="Or paste image URL"
+                      className="w-full px-3 py-2 border rounded text-sm"
+                    />
+                    {(authorImagePreview || formData.authorImage) && (
+                      <div className="mt-2">
+                        <img
+                          src={authorImagePreview || formData.authorImage}
+                          alt="Author preview"
+                          className="w-20 h-20 object-cover rounded-full border mx-auto"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://via.placeholder.com/200x200?text=Invalid+Image';
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -442,7 +574,6 @@ const AdminBlog = () => {
                   <span className="text-sm font-medium">Publish immediately</span>
                 </label>
               </div>
-
               <div className="flex justify-end gap-4">
                 <button
                   type="button"
