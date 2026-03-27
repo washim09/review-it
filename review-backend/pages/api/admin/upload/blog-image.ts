@@ -135,8 +135,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           // Move the temp file to the final path
           await fs.move(file.filepath, newFilePath, { overwrite: true });
 
-          // Generate the URL (relative to the public directory)
-          const fileUrl = `/uploads/blog/${newFilename}`;
+          // Generate the FULL URL with API domain (not relative path)
+          const apiDomain = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || 'https://api.riviewit.com';
+          const fileUrl = `${apiDomain}/uploads/blog/${newFilename}`;
 
           res.status(200).json({
             message: 'Blog image uploaded successfully',

@@ -1,7 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import { API_BASE_URL } from '../config/api';
+import 'react-quill-new/dist/quill.snow.css';
+
+const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
 
 interface BlogPost {
   id: number;
@@ -33,6 +37,7 @@ const AdminBlog = () => {
   const [uploadingAuthor, setUploadingAuthor] = useState(false);
   const [coverImagePreview, setCoverImagePreview] = useState('');
   const [authorImagePreview, setAuthorImagePreview] = useState('');
+  const [showPreview, setShowPreview] = useState(false);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -267,6 +272,26 @@ const AdminBlog = () => {
     }
   };
 
+  const quillModules = useMemo(() => ({
+    toolbar: [
+      [{ header: [1, 2, 3, 4, 5, 6, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ list: 'ordered' }, { list: 'bullet' }],
+      [{ indent: '-1' }, { indent: '+1' }],
+      ['blockquote', 'code-block'],
+      ['link', 'image'],
+      [{ align: [] }],
+      [{ color: [] }, { background: [] }],
+      ['clean'],
+    ],
+  }), []);
+
+  const quillFormats = [
+    'header', 'bold', 'italic', 'underline', 'strike',
+    'list', 'indent', 'blockquote', 'code-block',
+    'link', 'image', 'align', 'color', 'background',
+  ];
+
   const categories = ['Technology', 'Reviews', 'Tips', 'News', 'Guides'];
 
   return (
@@ -416,17 +441,17 @@ const AdminBlog = () => {
 
               <div className="mb-4">
                 <label className="block text-sm font-medium mb-2">Content *</label>
-                <textarea
-                  name="content"
-                  value={formData.content}
-                  onChange={handleInputChange}
-                  required
-                  rows={10}
-                  className="w-full px-3 py-2 border round
-                  
-                  
-                  ed"
-                />
+                <div className="border rounded overflow-hidden">
+                  <ReactQuill
+                    theme="snow"
+                    value={formData.content}
+                    onChange={(value: string) => setFormData((prev) => ({ ...prev, content: value }))}
+                    modules={quillModules}
+                    formats={quillFormats}
+                    style={{ minHeight: '300px' }}
+                    placeholder="Write your blog content here..."
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -516,7 +541,7 @@ const AdminBlog = () => {
                           alt="Cover preview"
                           className="w-full h-32 object-cover rounded border"
                           onError={(e) => {
-                            (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x200?text=Invalid+Image';
+                            (e.target as HTMLImageElement).style.display = 'none';
                           }}
                         />
                       </div>
@@ -553,7 +578,7 @@ const AdminBlog = () => {
                           alt="Author preview"
                           className="w-20 h-20 object-cover rounded-full border mx-auto"
                           onError={(e) => {
-                            (e.target as HTMLImageElement).src = 'https://via.placeholder.com/200x200?text=Invalid+Image';
+                            (e.target as HTMLImageElement).style.display = 'none';
                           }}
                         />
                       </div>
@@ -585,11 +610,111 @@ const AdminBlog = () => {
                 >
                   Cancel
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setShowPreview(true)}
+                  className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                >
+                  Preview
+                </button>
                 <button type="submit" className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
                   {editingPost ? 'Update Post' : 'Create Post'}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Blog Preview Modal */}
+      {showPreview && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[60] overflow-y-auto">
+          <div className="bg-white rounded-lg w-full max-w-4xl mx-4 my-8 max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b px-6 py-3 flex justify-between items-center z-10">
+              <h3 className="text-lg font-bold">Blog Post Preview</h3>
+              <button
+                onClick={() => setShowPreview(false)}
+                className="px-4 py-1 bg-gray-200 rounded hover:bg-gray-300 text-sm"
+              >
+                Close Preview
+              </button>
+            </div>
+
+            <div className="p-0">
+              {/* Cover Image */}
+              {formData.coverImage && (
+                <div className="w-full h-64 overflow-hidden">
+                  <img
+                    src={formData.coverImage}
+                    alt={formData.title}
+                    className="w-full h-full object-cover"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                  />
+                </div>
+              )}
+
+              <div className="px-8 py-6">
+                {/* Category */}
+                {formData.category && (
+                  <span className="inline-block px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium mb-4">
+                    {formData.category}
+                  </span>
+                )}
+
+                {/* Title */}
+                <h1 className="text-3xl font-bold mb-4 text-gray-900">
+                  {formData.title || 'Untitled Post'}
+                </h1>
+
+                {/* Excerpt */}
+                {formData.excerpt && (
+                  <p className="text-lg text-gray-600 mb-6">{formData.excerpt}</p>
+                )}
+
+                {/* Author & Meta */}
+                <div className="flex items-center gap-4 pb-6 mb-6 border-b">
+                  <div className="flex items-center gap-3">
+                    {formData.authorImage ? (
+                      <img
+                        src={formData.authorImage}
+                        alt={formData.author}
+                        className="w-10 h-10 rounded-full object-cover"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-purple-200 flex items-center justify-center text-purple-700 font-bold">
+                        {formData.author?.charAt(0)?.toUpperCase() || 'A'}
+                      </div>
+                    )}
+                    <div>
+                      <p className="font-medium text-gray-900">{formData.author || 'Author'}</p>
+                      <p className="text-sm text-gray-500">{formData.readTime} min read</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Content (rendered HTML) */}
+                <div
+                  className="prose prose-lg max-w-none"
+                  dangerouslySetInnerHTML={{ __html: formData.content || '<p>No content yet.</p>' }}
+                />
+
+                {/* Tags */}
+                {formData.tags && (
+                  <div className="mt-8 pt-6 border-t">
+                    <div className="flex flex-wrap gap-2">
+                      {formData.tags.split(',').map((tag, i) => (
+                        tag.trim() && (
+                          <span key={i} className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm">
+                            #{tag.trim()}
+                          </span>
+                        )
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}
