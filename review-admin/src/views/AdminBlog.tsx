@@ -1,11 +1,10 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { API_BASE_URL } from '../config/api';
-import 'react-quill-new/dist/quill.snow.css';
 
-const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
+const JoditEditor = dynamic(() => import('jodit-react'), { ssr: false });
 
 interface BlogPost {
   id: number;
@@ -25,6 +24,13 @@ interface BlogPost {
   createdAt: string;
   updatedAt: string;
 }
+
+const getImageUrl = (url: string | null | undefined): string => {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  const apiDomain = 'https://api.riviewit.com';
+  return `${apiDomain}${url.startsWith('/') ? '' : '/'}${url}`;
+};
 
 const AdminBlog = () => {
   const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -134,16 +140,16 @@ const AdminBlog = () => {
       slug: post.slug,
       excerpt: post.excerpt,
       content: post.content,
-      coverImage: post.coverImage || '',
+      coverImage: getImageUrl(post.coverImage) || '',
       category: post.category,
       tags: post.tags.join(', '),
       author: post.author,
-      authorImage: post.authorImage || '',
+      authorImage: getImageUrl(post.authorImage) || '',
       readTime: post.readTime,
       isPublished: post.isPublished,
     });
-    setCoverImagePreview(post.coverImage || '');
-    setAuthorImagePreview(post.authorImage || '');
+    setCoverImagePreview(getImageUrl(post.coverImage) || '');
+    setAuthorImagePreview(getImageUrl(post.authorImage) || '');
     setShowModal(true);
   };
 
@@ -272,25 +278,33 @@ const AdminBlog = () => {
     }
   };
 
-  const quillModules = useMemo(() => ({
-    toolbar: [
-      [{ header: [1, 2, 3, 4, 5, 6, false] }],
-      ['bold', 'italic', 'underline', 'strike'],
-      [{ list: 'ordered' }, { list: 'bullet' }],
-      [{ indent: '-1' }, { indent: '+1' }],
-      ['blockquote', 'code-block'],
-      ['link', 'image'],
-      [{ align: [] }],
-      [{ color: [] }, { background: [] }],
-      ['clean'],
-    ],
-  }), []);
+  const editorRef = useRef(null);
 
-  const quillFormats = [
-    'header', 'bold', 'italic', 'underline', 'strike',
-    'list', 'indent', 'blockquote', 'code-block',
-    'link', 'image', 'align', 'color', 'background',
-  ];
+  const editorConfig = useMemo(() => ({
+    readonly: false,
+    placeholder: 'Write your blog content here...',
+    height: 400,
+    toolbarAdaptive: false,
+    buttons: [
+      'bold', 'italic', 'underline', 'strikethrough', '|',
+      'font', 'fontsize', 'brush', 'paragraph', '|',
+      'ul', 'ol', '|',
+      'outdent', 'indent', 'align', '|',
+      'link', 'image', 'table', 'hr', '|',
+      'blockquote', 'source', '|',
+      'undo', 'redo', '|',
+      'eraser', 'fullsize',
+    ],
+    removeButtons: ['about'],
+    showCharsCounter: false,
+    showWordsCounter: false,
+    showXPathInStatusbar: false,
+    askBeforePasteHTML: false,
+    askBeforePasteFromWord: false,
+    uploader: {
+      insertImageAsBase64URI: true,
+    },
+  }), []);
 
   const categories = ['Technology', 'Reviews', 'Tips', 'News', 'Guides'];
 
@@ -441,17 +455,12 @@ const AdminBlog = () => {
 
               <div className="mb-4">
                 <label className="block text-sm font-medium mb-2">Content *</label>
-                <div className="border rounded overflow-hidden">
-                  <ReactQuill
-                    theme="snow"
-                    value={formData.content}
-                    onChange={(value: string) => setFormData((prev) => ({ ...prev, content: value }))}
-                    modules={quillModules}
-                    formats={quillFormats}
-                    style={{ minHeight: '300px' }}
-                    placeholder="Write your blog content here..."
-                  />
-                </div>
+                <JoditEditor
+                  ref={editorRef}
+                  value={formData.content}
+                  config={editorConfig}
+                  onBlur={(newContent: string) => setFormData((prev) => ({ ...prev, content: newContent }))}
+                />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">

@@ -22,6 +22,13 @@ interface BlogPost {
   publishedAt: string;
 }
 
+const getImageUrl = (url: string | null | undefined): string => {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  const apiDomain = 'https://api.riviewit.com';
+  return `${apiDomain}${url.startsWith('/') ? '' : '/'}${url}`;
+};
+
 const Blog: React.FC = () => {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -166,9 +173,10 @@ const Blog: React.FC = () => {
                         <div className="aspect-video bg-neutral-700 overflow-hidden">
                           {post.coverImage ? (
                             <img
-                              src={post.coverImage}
+                              src={getImageUrl(post.coverImage)}
                               alt={post.title}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">

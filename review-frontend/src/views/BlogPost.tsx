@@ -25,6 +25,13 @@ interface BlogPostData {
   updatedAt: string;
 }
 
+const getImageUrl = (url: string | null | undefined): string => {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  const apiDomain = 'https://api.riviewit.com';
+  return `${apiDomain}${url.startsWith('/') ? '' : '/'}${url}`;
+};
+
 const BlogPost: React.FC = () => {
   const params = useParams();
   const slug = params?.slug as string;
@@ -128,9 +135,10 @@ const BlogPost: React.FC = () => {
         {post.coverImage && (
           <div className="w-full h-96 overflow-hidden">
             <img
-              src={post.coverImage}
+              src={getImageUrl(post.coverImage)}
               alt={post.title}
               className="w-full h-full object-cover"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-neutral-900 to-transparent"></div>
           </div>
@@ -172,9 +180,10 @@ const BlogPost: React.FC = () => {
           <div className="flex items-center gap-3">
             {post.authorImage ? (
               <img
-                src={post.authorImage}
+                src={getImageUrl(post.authorImage)}
                 alt={post.author}
                 className="w-12 h-12 rounded-full object-cover"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
             ) : (
               <div className="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center">
