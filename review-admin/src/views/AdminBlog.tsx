@@ -456,9 +456,11 @@ const AdminBlog = () => {
               <div className="mb-4">
                 <label className="block text-sm font-medium mb-2">Content *</label>
                 <JoditEditor
+                  key={editingPost ? `edit-${editingPost.id}` : 'new-post'}
                   ref={editorRef}
                   value={formData.content}
                   config={editorConfig}
+                  tabIndex={1}
                   onBlur={(newContent: string) => setFormData((prev) => ({ ...prev, content: newContent }))}
                 />
               </div>

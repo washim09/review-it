@@ -5,6 +5,13 @@ import Cors from 'cors';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'a8f5f167f44f4964e6c998dee827110c8bd1a9c8b4e5f2a3b7d8c9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4';
 
+const getImageUrl = (url: string | null): string | null => {
+  if (!url) return null;
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  const apiDomain = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || 'https://api.riviewit.com';
+  return `${apiDomain}${url.startsWith('/') ? '' : '/'}${url}`;
+};
+
 // Initialize CORS middleware
 const cors = Cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -89,7 +96,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         prisma.blogPost.count({ where }),
       ]);
 
-      return res.status(200).json({ posts, total });
+      const normalizedPosts = posts.map((post: any) => ({
+        ...post,
+        coverImage: getImageUrl(post.coverImage),
+        authorImage: getImageUrl(post.authorImage),
+      }));
+
+      return res.status(200).json({ posts: normalizedPosts, total });
     } catch (error) {
       console.error('Error fetching blog posts:', error);
       return res.status(500).json({ message: 'Internal server error' });

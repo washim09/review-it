@@ -10,6 +10,13 @@ const cors = initMiddleware(
   })
 );
 
+const getImageUrl = (url: string | null): string | null => {
+  if (!url) return null;
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  const apiDomain = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || 'https://api.riviewit.com';
+  return `${apiDomain}${url.startsWith('/') ? '' : '/'}${url}`;
+};
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   await cors(req, res);
 
@@ -58,6 +65,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const formattedPosts = posts.map((post: any) => ({
       ...post,
+      coverImage: getImageUrl(post.coverImage),
+      authorImage: getImageUrl(post.authorImage),
       publishedAt: post.publishedAt.toISOString(),
     }));
 
