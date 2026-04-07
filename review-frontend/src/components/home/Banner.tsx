@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import AuthModal from '../modals/AuthModal';
 import axios from 'axios';
-import { getMediaUrl } from '../../utils/mediaUtils';
+import { getMediaUrl, isVideoUrl } from '../../utils/mediaUtils';
 import { Review } from '../../types';
 import { API_BASE_URL } from '../../config/api';
 
@@ -341,45 +341,36 @@ const Banner = () => {
                             })() && (
                               <div className="mb-2">
                                 <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-                                  {topReviews[0].media!.slice(0, 3).map((mediaItem: any, index: number) => (
-                                    <div key={index} className="relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden bg-neutral-100">
-                                      {mediaItem.type === 'image' || mediaItem.url?.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                                        <img 
-                                          src={mediaItem.url || mediaItem} 
-                                          alt={`Review media ${index + 1}`}
-                                          className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
-                                          onError={(e) => {
-                                            const target = e.target as HTMLImageElement;
-                                            target.style.display = 'none';
-                                          }}
-                                        />
-                                      ) : mediaItem.type === 'video' || mediaItem.url?.match(/\.(mp4|webm|ogg)$/i) ? (
-                                        <div className="relative w-full h-full bg-neutral-900 flex items-center justify-center">
-                                          <div className="absolute inset-0 bg-black/40"></div>
-                                          <svg className="w-8 h-8 text-white z-10" fill="currentColor" viewBox="0 0 20 20">
-                                            <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
-                                          </svg>
-                                          {mediaItem.thumbnail && (
-                                            <img 
-                                              src={mediaItem.thumbnail}
-                                              alt={`Video thumbnail ${index + 1}`}
-                                              className="absolute inset-0 w-full h-full object-cover"
-                                            />
-                                          )}
-                                        </div>
-                                      ) : (
-                                        <img 
-                                          src={typeof mediaItem === 'string' ? mediaItem : mediaItem.url} 
-                                          alt={`Review media ${index + 1}`}
-                                          className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
-                                          onError={(e) => {
-                                            const target = e.target as HTMLImageElement;
-                                            target.style.display = 'none';
-                                          }}
-                                        />
-                                      )}
-                                    </div>
-                                  ))}
+                                  {topReviews[0].media!.slice(0, 3).map((mediaItem: any, index: number) => {
+                                    const url = typeof mediaItem === 'string' ? mediaItem : (mediaItem.url || '');
+                                    return (
+                                      <div key={index} className="relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden bg-neutral-100">
+                                        {isVideoUrl(url) ? (
+                                          <video
+                                            src={url}
+                                            muted
+                                            playsInline
+                                            preload="metadata"
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                              const target = e.target as HTMLVideoElement;
+                                              target.style.display = 'none';
+                                            }}
+                                          />
+                                        ) : (
+                                          <img
+                                            src={url}
+                                            alt={`Review media ${index + 1}`}
+                                            className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
+                                            onError={(e) => {
+                                              const target = e.target as HTMLImageElement;
+                                              target.style.display = 'none';
+                                            }}
+                                          />
+                                        )}
+                                      </div>
+                                    );
+                                  })}
                                   {topReviews[0].media!.length > 3 && (
                                     <div className="flex-shrink-0 w-20 h-20 rounded-lg bg-neutral-200 flex items-center justify-center">
                                       <span className="text-neutral-600 text-sm font-medium">+{topReviews[0].media!.length - 3}</span>
@@ -462,19 +453,36 @@ const Banner = () => {
                         <p className="text-xs text-neutral-600 mb-2 line-clamp-2">{topReviews[1]?.content || topReviews[1]?.review || 'Great customer service!'}</p>
                         {Array.isArray(topReviews[1]?.media) && topReviews[1].media.length > 0 && (
                           <div className="flex gap-1 overflow-hidden">
-                            {topReviews[1].media.slice(0, 3).map((mediaItem: any, index: number) => (
-                              <div key={index} className="relative flex-shrink-0 w-14 h-14 rounded-md overflow-hidden bg-neutral-100">
-                                <img 
-                                  src={mediaItem} 
-                                  alt={`Media ${index + 1}`}
-                                  className="w-full h-full object-cover"
-                                  onError={(e) => {
-                                    const target = e.target as HTMLImageElement;
-                                    target.style.display = 'none';
-                                  }}
-                                />
-                              </div>
-                            ))}
+                            {topReviews[1].media.slice(0, 3).map((mediaItem: any, index: number) => {
+                              const url = typeof mediaItem === 'string' ? mediaItem : (mediaItem.url || '');
+                              return (
+                                <div key={index} className="relative flex-shrink-0 w-14 h-14 rounded-md overflow-hidden bg-neutral-100">
+                                  {isVideoUrl(url) ? (
+                                    <video
+                                      src={url}
+                                      muted
+                                      playsInline
+                                      preload="metadata"
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        const target = e.target as HTMLVideoElement;
+                                        target.style.display = 'none';
+                                      }}
+                                    />
+                                  ) : (
+                                    <img
+                                      src={url}
+                                      alt={`Media ${index + 1}`}
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        const target = e.target as HTMLImageElement;
+                                        target.style.display = 'none';
+                                      }}
+                                    />
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
                       </motion.div>
@@ -518,19 +526,36 @@ const Banner = () => {
                         <p className="text-xs text-neutral-600 mb-2 line-clamp-2">{topReviews[2]?.content || topReviews[2]?.review || 'Solid product, would recommend!'}</p>
                         {Array.isArray(topReviews[2]?.media) && topReviews[2].media.length > 0 && (
                           <div className="flex gap-1 overflow-hidden">
-                            {topReviews[2].media.slice(0, 3).map((mediaItem: any, index: number) => (
-                              <div key={index} className="relative flex-shrink-0 w-14 h-14 rounded-md overflow-hidden bg-neutral-100">
-                                <img 
-                                  src={mediaItem} 
-                                  alt={`Media ${index + 1}`}
-                                  className="w-full h-full object-cover"
-                                  onError={(e) => {
-                                    const target = e.target as HTMLImageElement;
-                                    target.style.display = 'none';
-                                  }}
-                                />
-                              </div>
-                            ))}
+                            {topReviews[2].media.slice(0, 3).map((mediaItem: any, index: number) => {
+                              const url = typeof mediaItem === 'string' ? mediaItem : (mediaItem.url || '');
+                              return (
+                                <div key={index} className="relative flex-shrink-0 w-14 h-14 rounded-md overflow-hidden bg-neutral-100">
+                                  {isVideoUrl(url) ? (
+                                    <video
+                                      src={url}
+                                      muted
+                                      playsInline
+                                      preload="metadata"
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        const target = e.target as HTMLVideoElement;
+                                        target.style.display = 'none';
+                                      }}
+                                    />
+                                  ) : (
+                                    <img
+                                      src={url}
+                                      alt={`Media ${index + 1}`}
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        const target = e.target as HTMLImageElement;
+                                        target.style.display = 'none';
+                                      }}
+                                    />
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
                       </motion.div>
