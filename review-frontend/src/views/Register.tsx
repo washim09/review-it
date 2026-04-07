@@ -1,11 +1,13 @@
 'use client'
 
 import { useState, useRef, ChangeEvent } from 'react';
+import { useRouter } from 'next/navigation';
 import Navbar from '../components/layout/Navbar';
 import { validateEmail, validatePassword, validateName, sanitizeInput } from '../utils/validation';
 import { API_BASE_URL } from '../config/api';
 
 const Register = () => {
+  const router = useRouter();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -194,7 +196,7 @@ const Register = () => {
         // Success: User created and verification email sent
         await response.json();
 
-        setMessage('Registration successful! Sign in to leave a review and help others.');
+        setMessage('Registration successful! Redirecting to login...');
         
         // Reset form fields only on success
         setName('');
@@ -212,6 +214,8 @@ const Register = () => {
         setProfileImage(null);
         setImagePreview(null);
         setPasswordStrength('');
+
+        setTimeout(() => router.push('/login'), 2000);
       } else {
         // Error: Handle all non-success status codes
         const errorData = await response.json().catch(() => ({ message: 'Registration failed. Please try again.' }));
