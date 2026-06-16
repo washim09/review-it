@@ -9,6 +9,8 @@ import { getToken } from '../context/AuthContext';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { getMediaUrl as getFullUrl, isVideoUrl } from '../utils/mediaUtils';
 import { API_BASE_URL } from '../config/api';
+import AffiliateBuyButton from '../components/reviews/AffiliateBuyButton';
+import AffiliateTrustBadge from '../components/reviews/AffiliateTrustBadge';
 
 interface ReviewDetail {
   id: number;
@@ -23,6 +25,10 @@ interface ReviewDetail {
   createdAt: string;
   mediaUrls?: string[];
   mediaTypes?: ('image' | 'video')[];
+  affiliateEnabled?: boolean;
+  affiliatePlatform?: string;
+  affiliateLink?: string;
+  affiliateStatus?: string;
   author: {
     id: number;
     name: string;
@@ -601,6 +607,13 @@ const ReviewDetailPage = () => {
           )}
           {/* Review content */}
           <div className="p-6">
+            {/* Affiliate Trust Badge */}
+            {review.affiliateEnabled && (review.affiliateStatus === 'APPROVED' || review.affiliateStatus === 'AUTO_APPROVED') && (
+              <div className="mb-3">
+                <AffiliateTrustBadge isApproved={true} />
+              </div>
+            )}
+
             {/* Content (brief summary) */}
             <div className="font-semibold text-lg mb-4">{review.content}</div>
             
@@ -621,6 +634,15 @@ const ReviewDetailPage = () => {
                   </span>
                 ))}
               </div>
+            )}
+
+            {/* Affiliate Buy Button (scroll-gated) */}
+            {review.affiliateEnabled && review.affiliatePlatform && (
+              <AffiliateBuyButton
+                reviewId={review.id}
+                platform={review.affiliatePlatform}
+                isApproved={review.affiliateStatus === 'APPROVED' || review.affiliateStatus === 'AUTO_APPROVED'}
+              />
             )}
 
             {/* Author and date info */}

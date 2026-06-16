@@ -52,8 +52,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 6;
     const rating = req.query.rating ? parseInt(req.query.rating as string, 10) : undefined;
 
-    // Build query filters
-    const whereClause: any = {};
+    // Build query filters - exclude non-approved affiliate reviews from public view
+    const whereClause: any = {
+      OR: [
+        { affiliateEnabled: false },
+        { affiliateStatus: { in: ['APPROVED', 'AUTO_APPROVED'] } },
+      ],
+    };
     
     // Add rating filter if specified
     if (rating !== undefined) {

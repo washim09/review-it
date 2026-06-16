@@ -84,6 +84,38 @@ const AdminNavbar = () => {
                 </Link>
               </li>
               <li>
+                <Link 
+                  href="/admin/affiliates" 
+                  className={`text-white hover:text-gray-200 ${currentPath === '/admin/affiliates' ? 'font-bold' : ''}`}
+                >
+                  Affiliates
+                </Link>
+              </li>
+              <li>
+                <Link 
+                  href="/admin/affiliate-analytics" 
+                  className={`text-white hover:text-gray-200 ${currentPath === '/admin/affiliate-analytics' ? 'font-bold' : ''}`}
+                >
+                  Analytics
+                </Link>
+              </li>
+              <li>
+                <Link 
+                  href="/admin/link-health" 
+                  className={`text-white hover:text-gray-200 ${currentPath === '/admin/link-health' ? 'font-bold' : ''}`}
+                >
+                  Link Health
+                </Link>
+              </li>
+              <li>
+                <Link 
+                  href="/admin/trusted-reviewers" 
+                  className={`text-white hover:text-gray-200 ${currentPath === '/admin/trusted-reviewers' ? 'font-bold' : ''}`}
+                >
+                  Trusted
+                </Link>
+              </li>
+              <li>
                 <button
                   onClick={handleLogout}
                   className="text-white hover:text-gray-200"

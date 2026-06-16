@@ -59,8 +59,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 100;
 
     // Fetch the latest reviews (public endpoint - no auth required)
+    // Exclude non-approved affiliate reviews from public view
     const reviews = await prisma.review.findMany({
       take: limit,
+      where: {
+        OR: [
+          { affiliateEnabled: false },
+          { affiliateStatus: { in: ['APPROVED', 'AUTO_APPROVED'] } },
+        ],
+      },
       select: {
         id: true,
         title: true,

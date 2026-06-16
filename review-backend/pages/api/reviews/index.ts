@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import fs from 'fs';
 import path from 'path';
 import { IncomingForm } from 'formidable';
+import { runAffiliatePipeline } from '../../../lib/affiliatePipeline';
 
 const prisma = new PrismaClient();
 
@@ -51,6 +52,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Fetch the latest reviews without requiring authentication
     try {
       const latestReviews = await prisma.review.findMany({
+        where: {
+          OR: [
+            { affiliateEnabled: false },
+            { affiliateStatus: { in: ['APPROVED', 'AUTO_APPROVED'] } },
+          ],
+        },
         orderBy: { createdAt: 'desc' },
         include: {
           author: {
@@ -155,28 +162,93 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         
         // Get tags array
         const tags = Array.isArray(reqData.tags) ? reqData.tags : [];
-        
-        // Get author ID from token (we already verified it)
+
+        // === Affiliate Pipeline ===
+        const affiliateEnabled = reqData.affiliateEnabled === true;
+        let affiliateData: any = {};
+
+        if (affiliateEnabled) {
+          const pipelineResult = await runAffiliatePipeline(
+            {
+              affiliateEnabled: true,
+              affiliatePlatform: reqData.affiliatePlatform || '',
+              affiliateLink: reqData.affiliateLink || '',
+              title: reqData.title,
+              content: reqData.content,
+              review: reqData.review || reqData.content,
+              rating: Number(reqData.rating),
+              entity: reqData.entity || reqData.title || 'general',
+              category: reqData.category,
+              tags,
+              authorId: userId,
+            },
+            prisma
+          );
+
+          // If pipeline failed with blocking errors, return them
+          if (!pipelineResult.success) {
+            return res.status(400).json({
+              success: false,
+              error: 'Affiliate validation failed',
+              errors: pipelineResult.errors,
+              affiliateStatus: pipelineResult.affiliateStatus,
+            });
+          }
+
+          affiliateData = {
+            affiliateEnabled: true,
+            affiliatePlatform: reqData.affiliatePlatform,
+            affiliateLink: reqData.affiliateLink.trim(),
+            affiliateStatus: pipelineResult.affiliateStatus,
+            aiSpamScore: pipelineResult.aiSpamScore,
+            aiSpamReasons: pipelineResult.aiSpamReasons,
+            affiliateSubmittedAt: new Date(),
+          };
+        }
 
         // Create review in the database
         const review = await prisma.review.create({
           data: {
-            entity: reqData.entity || reqData.title || 'general', // Default to title if entity not provided
+            entity: reqData.entity || reqData.title || 'general',
             rating: Number(reqData.rating),
             title: reqData.title,
             content: reqData.content,
-            review: reqData.content, // Use content as review field as well 
+            review: reqData.review || reqData.content,
             category: reqData.category || null,
             tags: tags,
             authorId: userId,
             mediaUrls: [],
-            // Media URLs will be updated separately in a media upload endpoint
             imageUrl: null,
             videoUrl: null,
+            ...affiliateData,
           },
         });
 
-        return res.status(201).json({ success: true, review });
+        // Create audit log entry for affiliate reviews
+        if (affiliateEnabled && affiliateData.affiliateStatus) {
+          await prisma.affiliateAuditLog.create({
+            data: {
+              reviewId: review.id,
+              adminId: null,
+              action: affiliateData.affiliateStatus === 'AUTO_APPROVED' ? 'AUTO_APPROVED' : 'RESUBMITTED',
+              reason: affiliateData.affiliateStatus === 'AUTO_APPROVED'
+                ? 'Passed automated verification (spam score: ' + affiliateData.aiSpamScore + ')'
+                : 'Submitted for manual verification (spam score: ' + affiliateData.aiSpamScore + ')',
+              aiSpamScore: affiliateData.aiSpamScore,
+            },
+          });
+        }
+
+        // Determine response based on affiliate status
+        const responseData: any = { success: true, review };
+        if (affiliateEnabled) {
+          responseData.affiliateStatus = affiliateData.affiliateStatus;
+          responseData.message = affiliateData.affiliateStatus === 'AUTO_APPROVED'
+            ? 'Your review with affiliate link has been automatically approved and is now live!'
+            : 'Your review has been submitted successfully. Because it contains an affiliate purchase link, it requires verification by the Riviewit Team before publication.';
+        }
+
+        return res.status(201).json(responseData);
       } catch (error) {
         console.error('Error creating review:', error);
         return res.status(500).json({

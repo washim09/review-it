@@ -36,6 +36,14 @@ const ReviewForm = ({ onClose, onSubmit }: ReviewFormProps) => {
   const [mediaError, setMediaError] = useState<string>('');
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState<string>('');
+
+  // Affiliate Link State
+  const [affiliateEnabled, setAffiliateEnabled] = useState(false);
+  const [affiliatePlatform, setAffiliatePlatform] = useState('');
+  const [affiliateLink, setAffiliateLink] = useState('');
+  const [affiliateErrors, setAffiliateErrors] = useState<{ platform?: string; link?: string }>({});
+  const [showAffiliatePopup, setShowAffiliatePopup] = useState(false);
+  const [affiliatePopupMessage, setAffiliatePopupMessage] = useState('');
   
   // References to file input elements
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -179,6 +187,42 @@ const ReviewForm = ({ onClose, onSubmit }: ReviewFormProps) => {
     setTags(tags.filter(tag => tag !== tagToRemove));
   };
 
+  // Affiliate platforms list
+  const AFFILIATE_PLATFORMS = [
+    { value: 'AMAZON', label: 'Amazon' },
+    { value: 'FLIPKART', label: 'Flipkart' },
+    { value: 'MEESHO', label: 'Meesho' },
+    { value: 'MYNTRA', label: 'Myntra' },
+    { value: 'AJIO', label: 'Ajio' },
+    { value: 'NYKAA', label: 'Nykaa' },
+    { value: 'CROMA', label: 'Croma' },
+  ];
+
+  // Validate affiliate fields
+  const validateAffiliateFields = (): boolean => {
+    if (!affiliateEnabled) return true;
+
+    const errors: { platform?: string; link?: string } = {};
+
+    if (!affiliatePlatform) {
+      errors.platform = 'Please select an affiliate platform.';
+    }
+    if (!affiliateLink.trim()) {
+      errors.link = 'Please enter your affiliate link.';
+    } else if (!affiliateLink.trim().startsWith('https://')) {
+      errors.link = 'Affiliate link must start with https://';
+    } else {
+      try {
+        new URL(affiliateLink.trim());
+      } catch {
+        errors.link = 'Please enter a valid URL.';
+      }
+    }
+
+    setAffiliateErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -194,6 +238,11 @@ const ReviewForm = ({ onClose, onSubmit }: ReviewFormProps) => {
     
     if (isOtherCategory && !customCategory.trim()) {
       setError('Please enter a custom category or select a different category');
+      return;
+    }
+
+    // Validate affiliate fields if enabled
+    if (!validateAffiliateFields()) {
       return;
     }
     
@@ -220,15 +269,23 @@ const ReviewForm = ({ onClose, onSubmit }: ReviewFormProps) => {
       }
 
       // Create a simple JSON object with the basic review data
-      const reviewData = {
+      const reviewData: any = {
         title,
         entity: productName || title,
         productName: productName || '',
         category: isOtherCategory ? customCategory.trim() : (category || undefined),
         content,
+        review: content,
         rating,
-        tags
+        tags,
       };
+
+      // Add affiliate data if enabled
+      if (affiliateEnabled && affiliatePlatform && affiliateLink.trim()) {
+        reviewData.affiliateEnabled = true;
+        reviewData.affiliatePlatform = affiliatePlatform;
+        reviewData.affiliateLink = affiliateLink.trim();
+      }
 
       // Use the real endpoint that saves to the database
       const response = await axios.post(
@@ -285,6 +342,12 @@ const ReviewForm = ({ onClose, onSubmit }: ReviewFormProps) => {
       // Show success message
       setSuccess(true);
       
+      // Check if this was an affiliate review that needs verification
+      if (response.data.affiliateStatus && response.data.affiliateStatus !== 'AUTO_APPROVED') {
+        setAffiliatePopupMessage(response.data.message || 'Your review has been submitted successfully. Because it contains an affiliate purchase link, it requires verification by the Riviewit Team before publication.');
+        setShowAffiliatePopup(true);
+      }
+      
       // Reset form
       setTitle('');
       setProductName('');
@@ -294,6 +357,10 @@ const ReviewForm = ({ onClose, onSubmit }: ReviewFormProps) => {
       setContent('');
       setRating(5);
       setTags([]);
+      setAffiliateEnabled(false);
+      setAffiliatePlatform('');
+      setAffiliateLink('');
+      setAffiliateErrors({});
       clearAllImages();
       clearAllVideos();
       
@@ -302,26 +369,28 @@ const ReviewForm = ({ onClose, onSubmit }: ReviewFormProps) => {
         onSubmit();
       }
       
-      // Close modal if provided
-      if (onClose) {
+      // Close modal if provided (delay if showing affiliate popup)
+      if (onClose && !showAffiliatePopup) {
         setTimeout(() => onClose(), 2000);
       }
     } catch (error: unknown) {
-      const err = error as { response?: { data?: { message?: string; error?: string } }; message?: string };
+      const err = error as { response?: { data?: { message?: string; error?: string; errors?: string[] } }; message?: string };
       console.error('Error submitting review:', error);
       
       // Handle different types of errors
       if (err.response) {
-        // Server responded with an error status code
-        const responseError = err.response.data?.error || err.response.data?.message || 'Failed to submit review';
-        setError(`Error: ${responseError}`);
+        // Check for affiliate validation errors array
+        if (err.response.data?.errors && Array.isArray(err.response.data.errors)) {
+          setError(err.response.data.errors.join(' '));
+        } else {
+          const responseError = err.response.data?.error || err.response.data?.message || 'Failed to submit review';
+          setError(`Error: ${responseError}`);
+        }
         console.error('Server response:', err.response.data);
       } else if (err.message?.includes('Network Error')) {
-        // Specific handling for network errors
         setError('Network error: Unable to connect to the server. Please check your connection.');
         console.error('Network error:', err.message);
       } else {
-        // Something else caused the error
         setError(`Error: ${err.message || 'An unknown error occurred'}`);
         console.error('Unknown error:', error);
       }
@@ -390,6 +459,83 @@ const ReviewForm = ({ onClose, onSubmit }: ReviewFormProps) => {
                 className="w-full px-3 py-2 bg-[#21293d] border border-gray-700 rounded text-white placeholder-gray-500"
                 placeholder="Enter product name (optional)"
               />
+            </div>
+
+            {/* Affiliate Checkbox */}
+            <div className="border border-gray-700 rounded p-3 bg-[#21293d]/50">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={affiliateEnabled}
+                  onChange={(e) => {
+                    setAffiliateEnabled(e.target.checked);
+                    if (!e.target.checked) {
+                      setAffiliatePlatform('');
+                      setAffiliateLink('');
+                      setAffiliateErrors({});
+                    }
+                  }}
+                  className="w-4 h-4 rounded border-gray-600 text-indigo-600 focus:ring-indigo-500 bg-[#21293d]"
+                />
+                <span className="text-gray-300 text-sm">I want to add an affiliate purchase link</span>
+              </label>
+
+              {/* Affiliate Fields - shown only when checkbox is checked */}
+              {affiliateEnabled && (
+                <div className="mt-3 space-y-3 pt-3 border-t border-gray-700">
+                  {/* Platform Dropdown */}
+                  <div>
+                    <label htmlFor="affiliatePlatform" className="block text-gray-300 text-sm mb-1">
+                      Affiliate Platform <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      id="affiliatePlatform"
+                      value={affiliatePlatform}
+                      onChange={(e) => {
+                        setAffiliatePlatform(e.target.value);
+                        setAffiliateErrors((prev) => ({ ...prev, platform: undefined }));
+                      }}
+                      className="w-full px-3 py-2 bg-[#21293d] border border-gray-700 rounded text-white"
+                    >
+                      <option value="">Select platform...</option>
+                      {AFFILIATE_PLATFORMS.map((p) => (
+                        <option key={p.value} value={p.value}>{p.label}</option>
+                      ))}
+                    </select>
+                    {affiliateErrors.platform && (
+                      <p className="text-red-400 text-xs mt-1">{affiliateErrors.platform}</p>
+                    )}
+                  </div>
+
+                  {/* Affiliate Link Input */}
+                  <div>
+                    <label htmlFor="affiliateLink" className="block text-gray-300 text-sm mb-1">
+                      Affiliate Link <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="url"
+                      id="affiliateLink"
+                      value={affiliateLink}
+                      onChange={(e) => {
+                        setAffiliateLink(e.target.value);
+                        setAffiliateErrors((prev) => ({ ...prev, link: undefined }));
+                      }}
+                      className="w-full px-3 py-2 bg-[#21293d] border border-gray-700 rounded text-white placeholder-gray-500"
+                      placeholder="Paste your affiliate link here (e.g., https://amzn.in/xxxxxxx)"
+                      maxLength={2048}
+                      inputMode="url"
+                    />
+                    {affiliateErrors.link && (
+                      <p className="text-red-400 text-xs mt-1">{affiliateErrors.link}</p>
+                    )}
+                  </div>
+
+                  {/* Info note */}
+                  <p className="text-gray-500 text-xs">
+                    Note: Reviews with affiliate links require verification before publication. Minimum 150 words required.
+                  </p>
+                </div>
+              )}
             </div>
             
             <div>
@@ -634,6 +780,35 @@ const ReviewForm = ({ onClose, onSubmit }: ReviewFormProps) => {
             </div>
           </form>
         </div>
+
+        {/* Affiliate Verification Popup */}
+        {showAffiliatePopup && (
+          <div className="fixed inset-0 z-[1000] bg-black bg-opacity-80 flex items-center justify-center p-4">
+            <div className="bg-[#1a2234] rounded-lg p-6 max-w-sm w-full border border-gray-700 shadow-2xl">
+              <div className="text-center">
+                <div className="w-12 h-12 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">⏳</span>
+                </div>
+                <h3 className="text-white font-semibold text-lg mb-3">Review Submitted</h3>
+                <p className="text-gray-300 text-sm leading-relaxed mb-4">
+                  {affiliatePopupMessage}
+                </p>
+                <p className="text-gray-500 text-xs mb-4">
+                  This verification helps protect readers from spam, phishing, malicious links, and fake affiliate promotions while maintaining trust across the platform.
+                </p>
+                <button
+                  onClick={() => {
+                    setShowAffiliatePopup(false);
+                    if (onClose) onClose();
+                  }}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded transition-colors font-medium"
+                >
+                  Got it
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

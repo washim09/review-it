@@ -7,6 +7,7 @@ import ReviewForm from '../components/reviews/ReviewForm';
 import UserProfileReviews from '../components/profile/UserProfileReviews';
 import UserDetails from '../components/profile/UserDetails';
 import PushNotificationSettings from '../components/pwa/PushNotificationSettings';
+import AffiliateAnalytics from '../components/reviews/AffiliateAnalytics';
 import { fetchUserProfile } from '../services/userService';
 import { FaPencilAlt } from 'react-icons/fa';
 import { User } from '../types';
@@ -82,6 +83,11 @@ const UserProfile = () => {
         {/* Push Notification Settings */}
         <div className="max-w-2xl mx-auto mt-6">
           <PushNotificationSettings />
+        </div>
+
+        {/* Affiliate Analytics */}
+        <div className="max-w-2xl mx-auto">
+          <AffiliateAnalytics />
         </div>
         
         {/* Write Review Button */}

@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useUnreadMessages } from '../../hooks/useUnreadMessages';
+import NotificationBell from './NotificationBell';
 
 const Navbar = () => {
   const { isAuth, logout, isLoading } = useAuth();
@@ -119,6 +120,7 @@ const Navbar = () => {
                   <Link href="/profile" className={`${isActive('/profile') ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white' : 'text-white hover:bg-white/10'} px-3 py-2 rounded-lg text-sm font-medium transition-all`}>
                     Profile
                   </Link>
+                  <NotificationBell />
                   <button 
                     onClick={() => {
                       logout();
