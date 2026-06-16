@@ -64,6 +64,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       take: limit,
       where: {
         OR: [
+          { affiliateEnabled: null },
           { affiliateEnabled: false },
           { affiliateStatus: { in: ['APPROVED', 'AUTO_APPROVED'] } },
         ],
