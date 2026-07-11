@@ -55,7 +55,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Build query filters - exclude non-approved affiliate reviews from public view
     const whereClause: any = {
       OR: [
-        { affiliateEnabled: null },
+        { affiliateEnabled: { equals: null } },
         { affiliateEnabled: false },
         { affiliateStatus: { in: ['APPROVED', 'AUTO_APPROVED'] } },
       ],

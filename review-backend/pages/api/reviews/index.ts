@@ -54,7 +54,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const latestReviews = await prisma.review.findMany({
         where: {
           OR: [
-            { affiliateEnabled: null },
+            { affiliateEnabled: { equals: null } },
             { affiliateEnabled: false },
             { affiliateStatus: { in: ['APPROVED', 'AUTO_APPROVED'] } },
           ],
