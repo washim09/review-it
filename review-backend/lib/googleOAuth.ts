@@ -67,6 +67,7 @@ export const handleGoogleCallback = async (code: string) => {
           profileImage: googleUser.picture,
           imageUrl: googleUser.picture,
           isVerified: true,
+          profileCompleted: false,
           // Password is optional for OAuth users
           password: null
         }
@@ -93,7 +94,8 @@ export const handleGoogleCallback = async (code: string) => {
         name: user.name,
         email: user.email,
         imageUrl: user.profileImage || user.imageUrl,
-        profileImage: user.profileImage || user.imageUrl
+        profileImage: user.profileImage || user.imageUrl,
+        profileCompleted: user.profileCompleted
       }
     };
 

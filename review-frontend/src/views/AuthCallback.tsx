@@ -58,8 +58,12 @@ const AuthCallback = () => {
           // Update auth context
           login(token, userData);
           
-          // Redirect to home page after successful login
-          router.push('/');
+          // Redirect based on profile completion status
+          if (userData.profileCompleted === false) {
+            router.push('/complete-profile');
+          } else {
+            router.push('/');
+          }
         } catch (error) {
           console.error('Error processing OAuth callback:', error);
           router.push('/login?error=Processing failed');

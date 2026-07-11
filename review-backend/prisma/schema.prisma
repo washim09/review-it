@@ -45,6 +45,8 @@ model User {
   verificationToken String?
   verificationTokenExpires DateTime?
   emailVerifiedAt DateTime?
+  // Profile completion tracking
+  profileCompleted Boolean @default(false)
   createdAt DateTime @default(now())
   reviews   Review[]
   sentMessages ChatMessage[] @relation("MessageSender") // Opposite relation for sender

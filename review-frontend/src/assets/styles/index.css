@@ -160,7 +160,7 @@
   
   /* Form Styles - Gradient Wave */
   .form-label {
-    @apply block text-sm font-medium text-neutral-700 mb-1.5;
+    @apply block text-sm font-medium text-white mb-1.5;
   }
   
   .form-input,

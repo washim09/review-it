@@ -15,21 +15,16 @@ export const register = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   try {
-    const { 
-      name, 
-      email, 
-      password, 
-      imageUrl, 
-      contact, 
-      dob, 
-      gender, 
-      address, 
-      city, 
-      state, 
-      instagram, 
-      facebook, 
-      twitter 
-    } = req.body;
+    const { name, email, password } = req.body;
+
+    // Validate required fields
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: 'Name, email, and password are required' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters' });
+    }
     
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -43,23 +38,14 @@ export const register = async (req: NextApiRequest, res: NextApiResponse) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user first with all fields
+    // Create user with minimal fields only
     const user = await prisma.user.create({
       data: {
         name,
         email,
         password: hashedPassword,
-        imageUrl,
-        contact,
-        dob: dob ? new Date(dob) : null,
-        gender,
-        address,
-        city,
-        state,
-        instagram,
-        facebook,
-        twitter,
         isVerified: false,
+        profileCompleted: false,
       },
     });
 
@@ -143,6 +129,8 @@ export const login = async (req: NextApiRequest, res: NextApiResponse) => {
         instagram: true,
         facebook: true,
         twitter: true,
+        isVerified: true,
+        profileCompleted: true,
         createdAt: true,
       },
     });
@@ -188,6 +176,8 @@ export const login = async (req: NextApiRequest, res: NextApiResponse) => {
         instagram: user.instagram,
         facebook: user.facebook,
         twitter: user.twitter,
+        isVerified: user.isVerified,
+        profileCompleted: user.profileCompleted,
         createdAt: user.createdAt,
       },
     });

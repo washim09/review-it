@@ -87,9 +87,12 @@ const Login = () => {
       
       login(data.token, data.user); // Use the login function from context
       
-      // Debug: Check if token and user are properly stored
-      
-      router.push('/'); // Redirect to the landing page
+      // Redirect based on profile completion status
+      if (data.user.profileCompleted === false) {
+        router.push('/complete-profile');
+      } else {
+        router.push('/');
+      }
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to login. Please check your credentials.');
     } finally {

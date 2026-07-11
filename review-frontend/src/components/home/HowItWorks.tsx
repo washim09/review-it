@@ -1,6 +1,6 @@
 'use client'
 
-import { FaPencilAlt, FaSearch, FaThumbsUp } from 'react-icons/fa';
+import { FaPencilAlt, FaSearch, FaComments } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 
 const HowItWorks = () => {
@@ -32,7 +32,7 @@ const HowItWorks = () => {
           <div className="inline-flex items-center justify-center rounded-full bg-white/5 px-3 py-1 mb-4 text-sm">
             <span className="text-secondary-400">SIMPLE STEPS</span>
           </div>
-          <h2 className="text-3xl md:text-4xl text-white font-bold">How Review-It Works</h2>
+          <h2 className="text-3xl md:text-4xl text-white font-bold">How Riviewit Works</h2>
           <div className="w-20 h-1 mx-auto mt-4 rounded-full bg-gradient-to-r from-primary-500 to-accent-500"></div>
         </motion.div>
         
@@ -52,7 +52,7 @@ const HowItWorks = () => {
                   <FaPencilAlt className="text-primary-400 text-3xl relative z-10" />
                 </div>
               </div>
-              <h3 className="text-xl font-semibold mb-3">Write Reviews</h3>
+              <h3 className="text-xl font-semibold mb-3 text-white">Write Reviews</h3>
               <p className="text-white/60">
                 Share your honest experience with products and services you've used. 
                 Your feedback helps others make informed decisions.
@@ -75,7 +75,7 @@ const HowItWorks = () => {
                   <FaSearch className="text-secondary-400 text-3xl relative z-10" />
                 </div>
               </div>
-              <h3 className="text-xl font-semibold mb-3">Discover Reviews</h3>
+              <h3 className="text-xl font-semibold mb-3 text-white">Discover Reviews</h3>
               <p className="text-white/60">
                 Browse through reviews from other users to find the best products 
                 and services tailored to your needs.
@@ -95,10 +95,10 @@ const HowItWorks = () => {
               <div className="flex justify-center mb-5">
                 <div className="relative bg-gradient-to-br from-accent-900/50 to-accent-800/50 p-4 rounded-full border border-accent-700/30 overflow-hidden group">
                   <div className="absolute inset-0 bg-gradient-to-r from-accent-500 to-accent-600 opacity-0 group-hover:opacity-20 transition-opacity duration-500"></div>
-                  <FaThumbsUp className="text-accent-400 text-3xl relative z-10" />
+                  <FaComments className="text-accent-400 text-3xl relative z-10" />
                 </div>
               </div>
-              <h3 className="text-xl font-semibold mb-3">Connect With Reviewers</h3>
+              <h3 className="text-xl font-semibold mb-3 text-white">Connect With Reviewers</h3>
               <p className="text-white/60">
                 Message reviewers directly to ask questions or get more details 
                 about their experience with a product.

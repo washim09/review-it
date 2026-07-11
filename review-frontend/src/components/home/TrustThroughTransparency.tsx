@@ -66,7 +66,7 @@ const TrustThroughTransparency = () => {
           <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">Our <span className="gradient-text-primary">Impact</span> in Numbers</h2>
           <div className="w-20 h-1 mx-auto mt-4 rounded-full bg-gradient-to-r from-primary-500 to-accent-500 mb-6"></div>
           <p className="text-lg text-neutral-300 max-w-3xl mx-auto">
-            Join thousands of users who trust ReviewIt for honest product and service reviews
+            Join a growing community that trusts Riviewit for honest product and service reviews
           </p>
         </div>
         
