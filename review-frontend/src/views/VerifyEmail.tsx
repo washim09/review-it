@@ -47,7 +47,8 @@ const VerifyEmail = () => {
         }
       } catch (error) {
         setVerificationStatus('error');
-        setMessage('Verification failed. The link may have expired.');
+        const serverMessage = axios.isAxiosError(error) ? error.response?.data?.message : undefined;
+        setMessage(serverMessage || 'Verification failed. The link may have expired.');
       }
     };
 
@@ -66,7 +67,8 @@ const VerifyEmail = () => {
         setResendMessage(response.data.message || 'Failed to resend. Please try again.');
       }
     } catch (error) {
-      setResendMessage('Failed to resend verification email. Please try again later.');
+      const serverMessage = axios.isAxiosError(error) ? error.response?.data?.message : undefined;
+      setResendMessage(serverMessage || 'Failed to resend verification email. Please try again later.');
     } finally {
       setResendLoading(false);
     }

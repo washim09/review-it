@@ -2,6 +2,7 @@
 
 import { useState, ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import { FiEye, FiEyeOff } from 'react-icons/fi';
 import Navbar from '../components/layout/Navbar';
 import { validateEmail, validatePassword, validateName, sanitizeInput } from '../utils/validation';
 import { API_BASE_URL } from '../config/api';
@@ -19,6 +20,8 @@ const Register = () => {
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
   const [passwordStrength, setPasswordStrength] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleNameChange = (e: ChangeEvent<HTMLInputElement>) => {
     const newName = e.target.value;
@@ -117,8 +120,10 @@ const Register = () => {
       });
 
       if (response.status === 201) {
-        await response.json();
-        setMessage('Account created successfully! Please verify your email.');
+        const data = await response.json();
+        setMessage(data.emailSent === false
+          ? 'Account created successfully, but the verification email could not be sent. Use the resend option on the next page.'
+          : 'Account created successfully! Please verify your email.');
         setName('');
         setEmail('');
         setPassword('');
@@ -188,15 +193,26 @@ const Register = () => {
 
                 <div>
                   <label htmlFor="password" className="form-label">Password</label>
-                  <input
-                    id="password"
-                    type="password"
-                    className={`form-input ${passwordError ? 'border-red-500 focus:border-red-500 focus:ring-red-500/50' : ''}`}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={handlePasswordChange}
-                    required
-                  />
+                  <div className="relative">
+                    <input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      className={`form-input pr-11 ${passwordError ? 'border-red-500 focus:border-red-500 focus:ring-red-500/50' : ''}`}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={handlePasswordChange}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-neutral-400 hover:text-white transition-colors focus:outline-none"
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      tabIndex={-1}
+                    >
+                      {showPassword ? <FiEyeOff className="h-5 w-5" /> : <FiEye className="h-5 w-5" />}
+                    </button>
+                  </div>
                   {passwordError && <p className="mt-1 text-sm text-red-400">{passwordError}</p>}
                   {password && passwordStrength && (
                     <div className="mt-2">
@@ -223,15 +239,26 @@ const Register = () => {
 
                 <div>
                   <label htmlFor="confirmPassword" className="form-label">Confirm Password</label>
-                  <input
-                    id="confirmPassword"
-                    type="password"
-                    className={`form-input ${confirmPasswordError ? 'border-red-500 focus:border-red-500 focus:ring-red-500/50' : ''}`}
-                    placeholder="••••••••"
-                    value={confirmPassword}
-                    onChange={handleConfirmPasswordChange}
-                    required
-                  />
+                  <div className="relative">
+                    <input
+                      id="confirmPassword"
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      className={`form-input pr-11 ${confirmPasswordError ? 'border-red-500 focus:border-red-500 focus:ring-red-500/50' : ''}`}
+                      placeholder="••••••••"
+                      value={confirmPassword}
+                      onChange={handleConfirmPasswordChange}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-neutral-400 hover:text-white transition-colors focus:outline-none"
+                      aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                      tabIndex={-1}
+                    >
+                      {showConfirmPassword ? <FiEyeOff className="h-5 w-5" /> : <FiEye className="h-5 w-5" />}
+                    </button>
+                  </div>
                   {confirmPasswordError && <p className="mt-1 text-sm text-red-400">{confirmPasswordError}</p>}
                 </div>
 

@@ -25,28 +25,33 @@ export const sendVerificationEmailHandler = async (req: NextApiRequest, res: Nex
     const { userId, email } = req.body;
 
     if (!userId || !email) {
-      return res.status(400).json({ message: 'User ID and email are required' });
+      return res.status(400).json({ success: false, message: 'User ID and email are required' });
+    }
+
+    const numericUserId = parseInt(userId, 10);
+    if (isNaN(numericUserId)) {
+      return res.status(400).json({ success: false, message: 'Invalid user ID' });
     }
 
     // Check if user exists
     const user = await prisma.user.findUnique({
-      where: { id: userId }
+      where: { id: numericUserId }
     });
 
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ success: false, message: 'User not found' });
     }
 
     if (user.isVerified) {
-      return res.status(400).json({ message: 'Email already verified' });
+      return res.status(400).json({ success: false, message: 'Email already verified' });
     }
 
     // Generate verification token
-    const verificationToken = generateVerificationToken(userId, email);
+    const verificationToken = generateVerificationToken(numericUserId.toString(), email);
 
     // Update user with verification token
     await prisma.user.update({
-      where: { id: userId },
+      where: { id: numericUserId },
       data: { 
         verificationToken,
         verificationTokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
@@ -54,29 +59,36 @@ export const sendVerificationEmailHandler = async (req: NextApiRequest, res: Nex
     });
 
     // Send verification email
-    await EmailService.sendVerificationEmail(email, user.name, verificationToken);
+    const emailSent = await EmailService.sendVerificationEmail(email, user.name, verificationToken);
+
+    if (!emailSent) {
+      return res.status(500).json({ success: false, message: 'Failed to send verification email. Please try again later.' });
+    }
 
     res.status(200).json({ 
+      success: true,
       message: 'Verification email sent successfully',
       expiresIn: '24 hours'
     });
   } catch (error) {
     console.error('Send verification email error:', error);
-    res.status(500).json({ message: 'Failed to send verification email' });
+    res.status(500).json({ success: false, message: 'Failed to send verification email' });
   }
 };
 
-// Verify email with token
+// Verify email with token (supports GET with ?token= from the email link/frontend page, and POST with token in body)
 export const verifyEmailHandler = async (req: NextApiRequest, res: NextApiResponse) => {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method not allowed' });
+  if (req.method !== 'GET' && req.method !== 'POST') {
+    return res.status(405).json({ success: false, message: 'Method not allowed' });
   }
 
   try {
-    const { token } = req.body;
+    const token = req.method === 'GET'
+      ? (Array.isArray(req.query.token) ? req.query.token[0] : req.query.token)
+      : req.body?.token;
 
     if (!token) {
-      return res.status(400).json({ message: 'Verification token is required' });
+      return res.status(400).json({ success: false, message: 'Verification token is required' });
     }
 
     // Verify and decode token
@@ -84,31 +96,37 @@ export const verifyEmailHandler = async (req: NextApiRequest, res: NextApiRespon
     try {
       decoded = jwt.verify(token, JWT_SECRET) as any;
     } catch (error) {
-      return res.status(400).json({ message: 'Invalid or expired verification token' });
+      return res.status(400).json({ success: false, message: 'Invalid or expired verification token' });
     }
 
     if (decoded.type !== 'email_verification') {
-      return res.status(400).json({ message: 'Invalid token type' });
+      return res.status(400).json({ success: false, message: 'Invalid token type' });
     }
 
-    // Find user with verification token
+    const userId = parseInt(decoded.userId, 10);
+    if (isNaN(userId)) {
+      return res.status(400).json({ success: false, message: 'Invalid verification token' });
+    }
+
+    // Find the user the token was issued for
     const user = await prisma.user.findFirst({
       where: {
-        id: decoded.userId,
-        email: decoded.email,
-        verificationToken: token,
-        verificationTokenExpires: {
-          gt: new Date()
-        }
+        id: userId,
+        email: decoded.email
       }
     });
 
     if (!user) {
-      return res.status(400).json({ message: 'Invalid or expired verification token' });
+      return res.status(400).json({ success: false, message: 'Invalid or expired verification token' });
     }
 
+    // Treat an already-verified account as success (e.g. the link was clicked twice)
     if (user.isVerified) {
-      return res.status(400).json({ message: 'Email already verified' });
+      return res.status(200).json({ success: true, message: 'Email is already verified. You can log in.' });
+    }
+
+    if (user.verificationToken !== token || !user.verificationTokenExpires || user.verificationTokenExpires <= new Date()) {
+      return res.status(400).json({ success: false, message: 'Invalid or expired verification token' });
     }
 
     // Update user as verified
@@ -122,120 +140,11 @@ export const verifyEmailHandler = async (req: NextApiRequest, res: NextApiRespon
       }
     });
 
-    // Redirect to landing page after successful verification
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const redirectUrl = `${frontendUrl}/?verified=true&message=Email verified successfully!`;
-    
-    // Send HTML redirect page
-    res.status(200).send(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Email Verified - ⭐ Riviewit</title>
-        <meta http-equiv="refresh" content="0; url=${redirectUrl}">
-        <style>
-          body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-          }
-          .container {
-            text-align: center;
-            padding: 2rem;
-          }
-          .spinner {
-            border: 4px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            border-top: 4px solid white;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 1rem;
-          }
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="spinner"></div>
-          <h2>✅ Email Verified Successfully!</h2>
-          <p>Redirecting you to ⭐ Riviewit...</p>
-          <p><a href="${redirectUrl}" style="color: white;">Click here if not redirected automatically</a></p>
-        </div>
-        <script>
-          setTimeout(() => {
-            window.location.href = '${redirectUrl}';
-          }, 1000);
-        </script>
-      </body>
-      </html>
-    `);
+    // The frontend /verify-email page consumes this JSON and redirects to login
+    res.status(200).json({ success: true, message: 'Email verified successfully! You can now log in.' });
   } catch (error) {
     console.error('Email verification error:', error);
-    // Redirect to landing page with error message
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const redirectUrl = `${frontendUrl}/?verified=false&message=Email verification failed. Please try again.`;
-    
-    // Send HTML redirect page for errors
-    res.status(400).send(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Email Verification Failed - ⭐ Riviewit</title>
-        <meta http-equiv="refresh" content="0; url=${redirectUrl}">
-        <style>
-          body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-          }
-          .container {
-            text-align: center;
-            padding: 2rem;
-          }
-          .spinner {
-            border: 4px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            border-top: 4px solid white;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 1rem;
-          }
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="spinner"></div>
-          <h2>❌ Email Verification Failed</h2>
-          <p>Redirecting you to ⭐ Riviewit...</p>
-          <p><a href="${redirectUrl}" style="color: white;">Click here if not redirected automatically</a></p>
-        </div>
-        <script>
-          setTimeout(() => {
-            window.location.href = '${redirectUrl}';
-          }, 1000);
-        </script>
-      </body>
-      </html>
-    `);
+    res.status(500).json({ success: false, message: 'Email verification failed. Please try again.' });
   }
 };
 
@@ -249,7 +158,7 @@ export const resendVerificationEmailHandler = async (req: NextApiRequest, res: N
     const { email } = req.body;
 
     if (!email) {
-      return res.status(400).json({ message: 'Email is required' });
+      return res.status(400).json({ success: false, message: 'Email is required' });
     }
 
     // Find user by email
@@ -258,19 +167,23 @@ export const resendVerificationEmailHandler = async (req: NextApiRequest, res: N
     });
 
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ success: false, message: 'User not found' });
     }
 
     if (user.isVerified) {
-      return res.status(400).json({ message: 'Email already verified' });
+      return res.status(400).json({ success: false, message: 'Email already verified' });
     }
 
     // Check rate limiting (prevent spam)
-    const lastVerificationSent = user.verificationTokenExpires;
-    if (lastVerificationSent && new Date().getTime() - lastVerificationSent.getTime() < 5 * 60 * 1000) {
-      return res.status(429).json({ 
-        message: 'Please wait 5 minutes before requesting another verification email' 
-      });
+    // The token expires 24h after it was sent, so the last send time is expiry minus 24h
+    if (user.verificationTokenExpires) {
+      const lastVerificationSent = user.verificationTokenExpires.getTime() - 24 * 60 * 60 * 1000;
+      if (Date.now() - lastVerificationSent < 5 * 60 * 1000) {
+        return res.status(429).json({ 
+          success: false,
+          message: 'Please wait 5 minutes before requesting another verification email' 
+        });
+      }
     }
 
     // Generate new verification token
@@ -286,14 +199,19 @@ export const resendVerificationEmailHandler = async (req: NextApiRequest, res: N
     });
 
     // Send verification email
-    await EmailService.sendVerificationEmail(email, user.name, verificationToken);
+    const emailSent = await EmailService.sendVerificationEmail(email, user.name, verificationToken);
+
+    if (!emailSent) {
+      return res.status(500).json({ success: false, message: 'Failed to send verification email. Please try again later.' });
+    }
 
     res.status(200).json({ 
+      success: true,
       message: 'Verification email resent successfully',
       expiresIn: '24 hours'
     });
   } catch (error) {
     console.error('Resend verification email error:', error);
-    res.status(500).json({ message: 'Failed to resend verification email' });
+    res.status(500).json({ success: false, message: 'Failed to resend verification email' });
   }
 };

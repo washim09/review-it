@@ -62,6 +62,7 @@ export const register = async (req: NextApiRequest, res: NextApiResponse) => {
     });
 
     // Send verification email
+    let emailSent = false;
     try {
       console.log('📨 Preparing to send verification email...');
       console.log('User details:', { email, name });
@@ -70,7 +71,7 @@ export const register = async (req: NextApiRequest, res: NextApiResponse) => {
       console.log('- SENDGRID_FROM_EMAIL:', process.env.SENDGRID_FROM_EMAIL || 'Not set');
       console.log('- FRONTEND_URL:', process.env.FRONTEND_URL || 'Not set');
       
-      const emailSent = await EmailService.sendVerificationEmail(email, name, verificationToken);
+      emailSent = await EmailService.sendVerificationEmail(email, name, verificationToken);
       
       if (emailSent) {
         console.log('✅ Verification email queued for:', email);
@@ -90,7 +91,9 @@ export const register = async (req: NextApiRequest, res: NextApiResponse) => {
     );
 
     res.status(201).json({
-      message: 'User registered successfully! Please check your email to verify your account.',
+      message: emailSent
+        ? 'User registered successfully! Please check your email to verify your account.'
+        : 'User registered successfully, but we could not send the verification email. Please use the resend option on the verification page.',
       token,
       user: {
         id: user.id,
@@ -98,7 +101,8 @@ export const register = async (req: NextApiRequest, res: NextApiResponse) => {
         email: user.email,
         emailVerified: user.isVerified,
       },
-      requiresEmailVerification: true
+      requiresEmailVerification: true,
+      emailSent
     });
   } catch (error) {
     console.error('Registration error:', error);
@@ -149,6 +153,15 @@ export const login = async (req: NextApiRequest, res: NextApiResponse) => {
 
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    // Block unverified accounts and point users to the verification flow
+    if (!user.isVerified) {
+      return res.status(403).json({
+        message: 'Please verify your email address before logging in. Check your inbox for the verification link.',
+        requiresEmailVerification: true,
+        email: user.email
+      });
     }
 
     // Create token

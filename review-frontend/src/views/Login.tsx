@@ -77,6 +77,10 @@ const Login = () => {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Login failed' }));
+        if (response.status === 403 && errorData.requiresEmailVerification) {
+          router.push(`/verify-email?email=${encodeURIComponent(errorData.email || sanitizedEmail)}`);
+          return;
+        }
         throw new Error(errorData.message || 'Login failed');
       }
 
