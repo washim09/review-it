@@ -8,6 +8,7 @@ import UserProfileReviews from '../components/profile/UserProfileReviews';
 import UserDetails from '../components/profile/UserDetails';
 import PushNotificationSettings from '../components/pwa/PushNotificationSettings';
 import AffiliateAnalytics from '../components/reviews/AffiliateAnalytics';
+import RewardsPanel from '../components/rewards/RewardsPanel';
 import { fetchUserProfile } from '../services/userService';
 import { FaPencilAlt } from 'react-icons/fa';
 import { User } from '../types';
@@ -79,6 +80,8 @@ const UserProfile = () => {
       <div className="container mx-auto px-4 py-6 pt-20">
         {/* User Details Component */}
         {user && <UserDetails user={user} onUserUpdate={handleUserUpdate} />}
+
+        <RewardsPanel />
         
         {/* Push Notification Settings */}
         <div className="max-w-2xl mx-auto mt-6">

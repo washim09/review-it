@@ -3,6 +3,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 import { runCorsMiddleware } from '../../../../lib/cors-middleware';
+import { applyRewardDecision } from '../../../../lib/rewardService';
 
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || '54b6b0d3a9a1d639b0797cac96e96623c832ca5952bcc12449604c98d59c08cf22edec3379e0203564346c68dc7e9dc16905e4328e3d65c7e6a53f743401dd44';
@@ -188,6 +189,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         where: { id: reviewId },
         data: updateData,
       });
+
+      try {
+        await applyRewardDecision(reviewId);
+      } catch (rewardError) {
+        console.error('[Rewards] Decision failed after affiliate status change:', rewardError);
+      }
 
       // Create audit log
       await prisma.affiliateAuditLog.create({

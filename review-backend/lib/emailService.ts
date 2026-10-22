@@ -715,6 +715,71 @@ Review-It Security Team
       text
     };
   }
+
+  private static async sendRaw(to: string, subject: string, html: string, text: string): Promise<boolean> {
+    try {
+      if (!process.env.SENDGRID_API_KEY) {
+        console.error('SendGrid API key not configured');
+        return false;
+      }
+      await sgMail.send({ to, from: this.fromEmail, subject, html, text });
+      return true;
+    } catch (error) {
+      console.error('Failed to send reward email:', error);
+      return false;
+    }
+  }
+
+  static async sendWithdrawalUserEmail(
+    email: string,
+    name: string,
+    amount: number,
+    event: 'received' | 'approved' | 'rejected' | 'paid',
+    upiId: string,
+    reason?: string
+  ): Promise<boolean> {
+    const copy = {
+      received: {
+        subject: 'Withdrawal request received - Riviewit',
+        text: `Hi ${name}, we received your withdrawal request for ₹${amount}. If it is approved, payment to ${upiId} is expected within 24 hours.`,
+      },
+      approved: {
+        subject: 'Withdrawal approved - Riviewit',
+        text: `Hi ${name}, your withdrawal of ₹${amount} was approved. Payment to ${upiId} is expected within 24 hours.`,
+      },
+      rejected: {
+        subject: 'Withdrawal update - Riviewit',
+        text: `Hi ${name}, your withdrawal of ₹${amount} was not approved. The amount is back in your available balance. Reason: ${reason || 'Not specified.'}`,
+      },
+      paid: {
+        subject: 'Withdrawal paid - Riviewit',
+        text: `Hi ${name}, ₹${amount} was manually transferred to ${upiId}.`,
+      },
+    }[event];
+
+    return this.sendRaw(email, copy.subject, `<p>${copy.text}</p>`, copy.text);
+  }
+
+  static async sendWithdrawalAdminEmail(
+    name: string,
+    email: string,
+    amount: number,
+    upiId: string,
+    withdrawalId: number
+  ): Promise<boolean> {
+    const text = `${name} (${email}) requested a manual withdrawal of ₹${amount} to ${upiId}. Request #${withdrawalId}. Review it in the admin panel. No payment is sent automatically.`;
+    return this.sendRaw(this.adminEmail, `Withdrawal request #${withdrawalId} - Riviewit`, `<p>${text}</p>`, text);
+  }
+
+  static async sendRewardFlagAdminEmail(
+    name: string,
+    email: string,
+    reason: string,
+    details: string
+  ): Promise<boolean> {
+    const text = `Reward review needed for ${name} (${email}). Reason: ${reason}. ${details}`;
+    return this.sendRaw(this.adminEmail, `Reward flag: ${reason} - Riviewit`, `<p>${text}</p>`, text);
+  }
 }
 
 export default EmailService;

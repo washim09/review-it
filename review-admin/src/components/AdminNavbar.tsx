@@ -60,6 +60,22 @@ const AdminNavbar = () => {
                 </Link>
               </li>
               <li>
+                <Link
+                  href="/admin/reward-reviews"
+                  className={`text-white hover:text-gray-200 ${currentPath === '/admin/reward-reviews' ? 'font-bold' : ''}`}
+                >
+                  Rewards
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/admin/withdrawals"
+                  className={`text-white hover:text-gray-200 ${currentPath === '/admin/withdrawals' ? 'font-bold' : ''}`}
+                >
+                  Withdrawals
+                </Link>
+              </li>
+              <li>
                 <Link 
                   href="/admin/support" 
                   className={`text-white hover:text-gray-200 ${currentPath === '/admin/support' ? 'font-bold' : ''}`}

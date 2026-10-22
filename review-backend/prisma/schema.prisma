@@ -47,11 +47,16 @@ model User {
   emailVerifiedAt DateTime?
   // Profile completion tracking
   profileCompleted Boolean @default(false)
+  // Manual payout destination. Unique so one UPI ID cannot be shared across accounts.
+  upiId String? @unique @db.VarChar(256)
   createdAt DateTime @default(now())
   reviews   Review[]
   sentMessages ChatMessage[] @relation("MessageSender") // Opposite relation for sender
   receivedMessages ChatMessage[] @relation("MessageRecipient") // Opposite relation for recipient
   likes     Like[]   // Relationship to Like model
+  rewardLedger RewardLedger[]
+  withdrawalRequests WithdrawalRequest[]
+  rewardFlags RewardFlag[]
 }
 
 model Review {
@@ -92,8 +97,18 @@ model Review {
 
   affiliateAuditLogs AffiliateAuditLog[]
 
+  // Reward gate. Public visibility is unchanged. Null means the review predates rewards.
+  // INELIGIBLE | PENDING | FLAGGED | APPROVED | REJECTED | REVERSED
+  rewardStatus String? @db.VarChar(20)
+  contentHash String? @db.VarChar(64)
+  submissionIpHash String? @db.VarChar(64)
+  rewardLedger RewardLedger[]
+
   @@index([affiliateEnabled, affiliateStatus])
   @@index([affiliateStatus])
+  @@index([authorId, contentHash])
+  @@index([rewardStatus])
+  @@index([submissionIpHash])
 }
 
 model ChatMessage {
@@ -251,4 +266,64 @@ model Notification {
 
   @@index([userId, isRead])
   @@index([userId, createdAt])
+}
+
+// Immutable reward and withdrawal ledger. Rows are inserted, never updated or deleted.
+model RewardLedger {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewId     Int?
+  review       Review?  @relation(fields: [reviewId], references: [id], onDelete: SetNull)
+  withdrawalId Int?
+  withdrawal   WithdrawalRequest? @relation(fields: [withdrawalId], references: [id])
+  // REVIEW_CREDIT | REVIEW_REVERSAL | WITHDRAWAL_DEBIT | WITHDRAWAL_REVERSAL
+  entryType    String   @db.VarChar(30)
+  amount       Int
+  note         String?  @db.Text
+  createdAt    DateTime @default(now())
+
+  @@unique([reviewId, entryType])
+  @@index([userId, entryType])
+  @@index([withdrawalId])
+}
+
+// Manual UPI withdrawal. openKey is user-{id} while PENDING or APPROVED, and null after that.
+model WithdrawalRequest {
+  id              Int       @id @default(autoincrement())
+  userId          Int
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount          Int
+  upiId           String    @db.VarChar(256)
+  // PENDING | APPROVED | REJECTED | PAID
+  status          String    @db.VarChar(20)
+  openKey         String?   @unique @db.VarChar(40)
+  rejectionReason String?   @db.Text
+  reviewedBy      Int?
+  reviewedAt      DateTime?
+  paidAt          DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  ledger          RewardLedger[]
+
+  @@index([userId, status])
+  @@index([status, createdAt])
+}
+
+// Suspicious-activity queue. OPEN flags block withdrawals until an admin clears them.
+model RewardFlag {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewId  Int?
+  reason    String    @db.VarChar(80)
+  details   String?   @db.Text
+  // OPEN | CLEARED
+  status    String    @default("OPEN") @db.VarChar(20)
+  createdAt DateTime  @default(now())
+  clearedAt DateTime?
+  clearedBy Int?
+
+  @@index([userId, status])
+  @@index([reviewId])
 }

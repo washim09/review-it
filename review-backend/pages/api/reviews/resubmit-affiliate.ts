@@ -5,6 +5,7 @@ import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 import { runCorsMiddleware } from '../../../lib/cors-middleware';
 import { runAffiliatePipeline } from '../../../lib/affiliatePipeline';
+import { applyRewardDecision, hashContent } from '../../../lib/rewardService';
 
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || '54b6b0d3a9a1d639b0797cac96e96623c832ca5952bcc12449604c98d59c08cf22edec3379e0203564346c68dc7e9dc16905e4328e3d65c7e6a53f743401dd44';
@@ -113,8 +114,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         affiliateNeedsChangesReason: null, // Clear previous feedback
         affiliateSubmittedAt: new Date(),
         affiliateVerifiedAt: null,
+        contentHash: hashContent(updatedTitle, updatedContent, updatedReview),
       },
     });
+
+    try {
+      await applyRewardDecision(existingReview.id);
+    } catch (rewardError) {
+      console.error('[Rewards] Decision failed after affiliate resubmit:', rewardError);
+    }
 
     // Create audit log
     await prisma.affiliateAuditLog.create({

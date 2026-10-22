@@ -6,6 +6,7 @@ import fs from 'fs';
 import path from 'path';
 import { IncomingForm } from 'formidable';
 import { runAffiliatePipeline } from '../../../lib/affiliatePipeline';
+import { applyRewardDecision, assertCanSubmitReview, getClientIp, hashContent } from '../../../lib/rewardService';
 
 const prisma = new PrismaClient();
 
@@ -146,6 +147,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     } else if (req.method === 'POST') {
       try {
+        const submission = await assertCanSubmitReview(userId, getClientIp(req));
+        if (!submission.ok) {
+          return res.status(429).json({ error: submission.message });
+        }
+
         // Now we're using the Next.js built-in JSON parser
         const reqData = req.body;
 
@@ -221,6 +227,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             imageUrl: null,
             videoUrl: null,
             ...affiliateData,
+            contentHash: hashContent(reqData.title, reqData.content, reqData.review || reqData.content),
+            submissionIpHash: submission.ipHash,
           },
         });
 
@@ -237,6 +245,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               aiSpamScore: affiliateData.aiSpamScore,
             },
           });
+        }
+
+        try {
+          await applyRewardDecision(review.id);
+        } catch (rewardError) {
+          console.error('[Rewards] Decision failed after review create:', rewardError);
         }
 
         // Determine response based on affiliate status

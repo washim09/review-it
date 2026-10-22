@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient } from '@prisma/client';
 import Cors from 'cors';
 import jwt from 'jsonwebtoken';
+import { applyRewardDecision, settleRewardOnDelete } from '../../../../lib/rewardService';
 
 const prisma = new PrismaClient();
 
@@ -92,10 +93,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // PUT request - update a specific review
     else if (req.method === 'PUT') {
       try {
+        const safeBody = { ...(req.body || {}) };
+        delete safeBody.rewardStatus;
+        delete safeBody.contentHash;
+        delete safeBody.submissionIpHash;
+        delete safeBody.authorId;
+        delete safeBody.id;
         const updatedReview = await prisma.review.update({
           where: { id: reviewId },
-          data: req.body,
+          data: safeBody,
         });
+
+        try {
+          await applyRewardDecision(reviewId);
+        } catch (rewardError) {
+          console.error('[Rewards] Decision failed after admin review edit:', rewardError);
+        }
 
         return res.status(200).json(updatedReview);
       } catch (error) {
@@ -107,6 +120,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // DELETE request - delete a specific review
     else if (req.method === 'DELETE') {
       try {
+        await settleRewardOnDelete(reviewId, true);
         await prisma.review.delete({
           where: { id: reviewId },
         });

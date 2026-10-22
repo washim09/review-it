@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 import { runCorsMiddleware } from '../../../lib/cors-middleware';
+import { applyRewardDecision, getAuthorDeleteBlock, settleRewardOnDelete } from '../../../lib/rewardService';
 import path from 'path';
 import fs from 'fs-extra';
 
@@ -94,6 +95,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           return res.status(403).json({ error: 'Forbidden: You can only delete your own reviews' });
         }
 
+        if (!isAdmin) {
+          const deleteBlock = await getAuthorDeleteBlock(review.id, review.authorId);
+          if (deleteBlock) {
+            return res.status(403).json({ error: deleteBlock });
+          }
+        }
+
+        await settleRewardOnDelete(review.id, isAdmin);
+
         // Delete the review
         await prisma.review.delete({
           where: { id: reviewId },
@@ -155,6 +165,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           where: { id: reviewId },
           data: updateData,
         });
+
+        try {
+          await applyRewardDecision(reviewId);
+        } catch (rewardError) {
+          console.error('[Rewards] Decision failed after review edit:', rewardError);
+        }
         
         const uploadsDir = process.env.UPLOADS_PATH || path.join(process.cwd(), 'public', 'uploads');
 
